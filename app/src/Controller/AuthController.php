@@ -72,8 +72,9 @@ class AuthController extends AbstractController
                 $this->entityManager->persist($user);
                 $this->entityManager->flush();
 
-                $verifyLink = $this->generateUrl('app_verify_email', ['token' => $token]);
-                $this->addFlash('success', sprintf('Konto utworzone. Potwierdź email: %s', $verifyLink));
+                $verifyLink = $this->generateUrl('app_verify_email', ['token' => $token], UrlGeneratorInterface::ABSOLUTE_URL);
+                $this->sendEmailVerificationMessage($user, $verifyLink);
+                $this->addFlash('success', 'Konto utworzone. Sprawdź skrzynkę email, aby potwierdzić konto.');
 
                 return $this->redirectToRoute('app_login');
             }
@@ -165,6 +166,22 @@ class AuthController extends AbstractController
     public function logout(): never
     {
         throw new \LogicException('This method can be blank - it will be intercepted by the logout key on your firewall.');
+    }
+
+
+    private function sendEmailVerificationMessage(User $user, string $verifyLink): void
+    {
+        $message = (new Email())
+            ->from($this->mailerFrom)
+            ->to($user->getEmail())
+            ->subject('Potwierdzenie konta w SpotRace')
+            ->text("Cześć {$user->getName()},\n\nAby aktywować konto, kliknij link potwierdzający:\n{$verifyLink}");
+
+        try {
+            $this->mailer->send($message);
+        } catch (TransportExceptionInterface) {
+            $this->addFlash('error', 'Nie udało się wysłać maila weryfikacyjnego. Spróbuj ponownie później.');
+        }
     }
 
     private function sendPasswordResetEmail(User $user, string $resetLink): void

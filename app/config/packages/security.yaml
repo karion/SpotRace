@@ -21,6 +21,7 @@ security:
             form_login:
                 login_path: app_login
                 check_path: app_login
+                username_parameter: email
                 enable_csrf: true
                 default_target_path: app_home
             logout:
