@@ -1,0 +1,19 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rejestracja{% endblock %}
+
+{% block body %}
+    <main class="card">
+        <h1>Rejestracja</h1>
+        <form method="post">
+            <label>Imię</label>
+            <input type="text" name="name" required>
+            <label>Email</label>
+            <input type="email" name="email" required>
+            <label>Hasło</label>
+            <input type="password" name="password" required minlength="8">
+            <button type="submit">Zarejestruj</button>
+        </form>
+        <p><a href="{{ path('app_login') }}">Masz już konto? Zaloguj się</a></p>
+    </main>
+{% endblock %}

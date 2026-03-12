@@ -1,11 +1,11 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}SpotRace - Symfony 6.4{% endblock %}
+{% block title %}SpotRace - panel{% endblock %}
 
 {% block body %}
     <main class="card">
-        <h1>Symfony 6.4 LTS + Twig + MySQL</h1>
-        <p>Środowisko developerskie jest gotowe w Docker Compose.</p>
-        <p>Uruchom: <code>docker compose up --build</code></p>
+        <h1>Witaj, {{ user ? user.name : 'gościu' }}!</h1>
+        <p>Jesteś zalogowany do aplikacji.</p>
+        <p>Twoje role: {{ user ? user.roles|join(', ') : '' }}</p>
     </main>
 {% endblock %}
