@@ -7,5 +7,8 @@
         <h1>Witaj, {{ user ? user.name : 'gościu' }}!</h1>
         <p>Jesteś zalogowany do aplikacji.</p>
         <p>Twoje role: {{ user ? user.roles|join(', ') : '' }}</p>
+        {% if user and 'ROLE_ADMIN' in user.roles %}
+            <p><a class="button-link" href="{{ path('app_admin_parking_spot_index') }}">Przejdź do panelu admina</a></p>
+        {% endif %}
     </main>
 {% endblock %}

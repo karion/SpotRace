@@ -52,6 +52,17 @@ class AuthenticationSubscriber implements EventSubscriberInterface
 
         if (!$this->authService->isLoggedIn()) {
             $event->setResponse(new RedirectResponse($this->urlGenerator->generate('app_login')));
+
+            return;
+        }
+
+        if (!str_starts_with($route, 'app_admin_')) {
+            return;
+        }
+
+        $user = $this->authService->getCurrentUser();
+        if (!$user || !$user->isAdmin()) {
+            $event->setResponse(new RedirectResponse($this->urlGenerator->generate('app_home')));
         }
     }
 }
