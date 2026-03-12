@@ -142,8 +142,11 @@ class AuthController extends AbstractController
 
         if ($request->isMethod('POST')) {
             $password = (string) $request->request->get('password', '');
-            if (mb_strlen($password) < 8) {
-                $this->addFlash('error', 'Hasło musi mieć minimum 8 znaków.');
+            $passwordErrors = $this->validatePassword($password);
+            if ([] !== $passwordErrors) {
+                foreach ($passwordErrors as $error) {
+                    $this->addFlash('error', $error);
+                }
             } else {
                 $user
                     ->setPasswordHash($this->passwordHasher->hashPassword($user, $password))
@@ -197,8 +200,26 @@ class AuthController extends AbstractController
             $errors[] = 'Domena email nie jest dozwolona.';
         }
 
+        $errors = [...$errors, ...$this->validatePassword($password)];
+
+        return $errors;
+    }
+
+    /** @return array<int, string> */
+    private function validatePassword(string $password): array
+    {
+        $errors = [];
+
         if (mb_strlen($password) < 8) {
             $errors[] = 'Hasło musi mieć minimum 8 znaków.';
+        }
+
+        if (!preg_match('/\p{Lu}/u', $password) || !preg_match('/\p{Ll}/u', $password)) {
+            $errors[] = 'Hasło musi zawierać co najmniej 1 wielką i 1 małą literę.';
+        }
+
+        if (!preg_match('/\d/', $password)) {
+            $errors[] = 'Hasło musi zawierać co najmniej 1 cyfrę.';
         }
 
         return $errors;
