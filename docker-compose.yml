@@ -1,0 +1,39 @@
+services:
+  frankenphp:
+    image: dunglas/frankenphp:1-php8.3
+    container_name: spotrace_frankenphp
+    working_dir: /app
+    command: ["php-server", "--root", "public", "--listen", ":80"]
+    ports:
+      - "8080:80"
+    volumes:
+      - ./app:/app
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: 1
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    container_name: spotrace_mysql
+    environment:
+      MYSQL_DATABASE: app
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: app
+      MYSQL_PASSWORD: app
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  composer:
+    image: composer:2
+    container_name: spotrace_composer
+    working_dir: /app
+    volumes:
+      - ./app:/app
+    entrypoint: ["composer"]
+
+volumes:
+  mysql_data:
