@@ -35,3 +35,18 @@ make logs
 make sf CMD='about'
 make migrate
 ```
+
+## System logowania i rejestracji
+
+- Role: `ROLE_USER` (domyślnie), `ROLE_ADMIN`
+- Rejestracja wymaga: imię, email, hasło
+- Potwierdzenie email i reset hasła działają przez link z tokenem
+- Sesja trwa 1 tydzień (`604800` sekund)
+- Wszystkie strony poza `/login`, `/register`, `/verify-email/*`, `/forgot-password`, `/reset-password/*` wymagają zalogowania
+- Dozwolone domeny email konfigurujesz przez `ALLOWED_EMAIL_DOMAINS` (CSV, np. `firma.pl,gmail.com`)
+
+### Nadanie roli admin po emailu
+
+```bash
+php app/bin/console app:user:promote-admin user@example.com
+```
