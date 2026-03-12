@@ -2,8 +2,10 @@ services:
   frankenphp:
     image: dunglas/frankenphp:1-php8.3
     container_name: spotrace_frankenphp
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
     working_dir: /app
-    command: ["php-server", "--root", "public", "--listen", ":80"]
     ports:
       - "8080:80"
     volumes:
@@ -11,8 +13,7 @@ services:
     environment:
       APP_ENV: dev
       APP_DEBUG: 1
-      MAILER_DSN: smtp://mailhog:1025
-      MAILER_FROM: no-reply@spotrace.local
+      SERVER_NAME: :80
     depends_on:
       - mysql
       - mailhog
@@ -36,14 +37,6 @@ services:
     ports:
       - "1025:1025"
       - "8025:8025"
-
-  composer:
-    image: composer:2
-    container_name: spotrace_composer
-    working_dir: /app
-    volumes:
-      - ./app:/app
-    entrypoint: ["composer"]
 
 volumes:
   mysql_data:

@@ -3,7 +3,6 @@ SHELL := /bin/bash
 DC := docker compose
 SERVICE_APP := frankenphp
 SERVICE_DB := mysql
-SERVICE_COMPOSER := composer
 
 .PHONY: help up down restart build ps logs app-shell db-shell composer-install composer-update composer-require sf migrate
 
@@ -47,14 +46,14 @@ db-shell:
 	$(DC) exec $(SERVICE_DB) mysql -uapp -papp app
 
 composer-install:
-	$(DC) run --rm $(SERVICE_COMPOSER) install
+	$(DC) run --rm $(SERVICE_APP) composer install
 
 composer-update:
-	$(DC) run --rm $(SERVICE_COMPOSER) update
+	$(DC) run --rm $(SERVICE_APP) composer update
 
 composer-require:
 	@test -n "$(PACKAGE)" || (echo "Usage: make composer-require PACKAGE=vendor/package" && exit 1)
-	$(DC) run --rm $(SERVICE_COMPOSER) require $(PACKAGE)
+	$(DC) run --rm $(SERVICE_APP) composer require $(PACKAGE)
 
 sf:
 	@test -n "$(CMD)" || (echo "Usage: make sf CMD='about'" && exit 1)
