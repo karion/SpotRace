@@ -1,17 +1,82 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}SpotRace - panel{% endblock %}
+{% block title %}SpotRace - rezerwacje{% endblock %}
 
 {% block body %}
     <main class="card">
         <h1>Witaj, {{ user ? user.name : 'gościu' }}!</h1>
-        <p>Jesteś zalogowany do aplikacji.</p>
-        <p>Twoje role: {{ user ? user.roles|join(', ') : '' }}</p>
+        <p>Zarządzaj rezerwacjami miejsc parkingowych.</p>
         {% if user and 'ROLE_ADMIN' in user.roles %}
             <p>
                 <a class="button-link" href="{{ path('app_admin_parking_spot_index') }}">Miejsca postojowe</a>
                 <a class="button-link" href="{{ path('app_admin_user_index') }}">Użytkownicy</a>
             </p>
+        {% endif %}
+
+        <h2>Dzień rezerwacji</h2>
+        <form method="get">
+            <input type="date" name="date" value="{{ selectedDate|date('Y-m-d') }}">
+            <button type="submit">Pokaż dzień</button>
+        </form>
+
+        {% if assignment %}
+            <h2>Twoje przypisane miejsce</h2>
+            <p><strong>{{ assignment.parkingSpot.name }}</strong> ({{ assignment.parkingSpot.description }})</p>
+
+            {% if canConfirmAssigned %}
+                <form method="post" action="{{ path('app_reservation_confirm_assigned') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('confirm-assigned-' ~ selectedDate|date('Y-m-d')) }}">
+                    <input type="hidden" name="date" value="{{ selectedDate|date('Y-m-d') }}">
+                    <button type="submit">Potwierdź przypisane miejsce na {{ selectedDate|date('Y-m-d') }}</button>
+                </form>
+
+                <form method="post" action="{{ path('app_reservation_delegate_assigned') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delegate-assigned-' ~ selectedDate|date('Y-m-d')) }}">
+                    <input type="hidden" name="date" value="{{ selectedDate|date('Y-m-d') }}">
+                    <label for="target_user_id">Przekaż miejsce innej osobie</label>
+                    <select id="target_user_id" name="target_user_id" required>
+                        {% for managedUser in users %}
+                            {% if managedUser.id != user.id %}
+                                <option value="{{ managedUser.id }}">{{ managedUser.name }} ({{ managedUser.email }})</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    <button type="submit">Przekaż miejsce</button>
+                </form>
+            {% endif %}
+        {% endif %}
+
+        <h2>Wolne miejsca</h2>
+        {% if not canReserveFree %}
+            <p>Wolne miejsca możesz rezerwować tylko na dziś i jutro.</p>
+        {% elseif availableSpots is empty %}
+            <p>Brak wolnych miejsc na wybrany dzień.</p>
+        {% else %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Miejsce</th>
+                        <th>Opis</th>
+                        <th>Akcja</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for spot in availableSpots %}
+                        <tr>
+                            <td>{{ spot.name }}</td>
+                            <td>{{ spot.description }}</td>
+                            <td>
+                                <form class="inline-form" method="post" action="{{ path('app_reservation_free') }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('reserve-free-' ~ selectedDate|date('Y-m-d')) }}">
+                                    <input type="hidden" name="date" value="{{ selectedDate|date('Y-m-d') }}">
+                                    <input type="hidden" name="spot_id" value="{{ spot.id }}">
+                                    <button type="submit">Rezerwuj</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         {% endif %}
     </main>
 {% endblock %}

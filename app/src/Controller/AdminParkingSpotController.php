@@ -3,8 +3,12 @@
 namespace App\Controller;
 
 use App\Entity\ParkingSpot;
+use App\Entity\ParkingSpotAssignment;
+use App\Entity\User;
 use App\Form\ParkingSpotType;
+use App\Repository\ParkingSpotAssignmentRepository;
 use App\Repository\ParkingSpotRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,6 +20,8 @@ class AdminParkingSpotController extends AbstractController
 {
     public function __construct(
         private readonly ParkingSpotRepository $parkingSpots,
+        private readonly ParkingSpotAssignmentRepository $assignments,
+        private readonly UserRepository $users,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
@@ -65,6 +71,69 @@ class AdminParkingSpotController extends AbstractController
         return $this->render('admin/parking_spot/edit.html.twig', [
             'spot' => $parkingSpot,
             'editForm' => $form->createView(),
+        ]);
+    }
+
+    #[Route('/{id}/assign', name: 'app_admin_parking_spot_assign', methods: ['GET', 'POST'])]
+    public function assign(Request $request, ParkingSpot $parkingSpot): Response
+    {
+        if ('POST' === $request->getMethod()) {
+            if (!$this->isCsrfTokenValid('assign-spot-'.$parkingSpot->getId(), (string) $request->request->get('_token'))) {
+                throw $this->createAccessDeniedException('Nieprawidłowy token CSRF.');
+            }
+
+            $assignedUser = $this->users->find((string) $request->request->get('assigned_user_id'));
+            if (!$assignedUser instanceof User) {
+                $this->addFlash('error', 'Nie znaleziono użytkownika do przypisania.');
+
+                return $this->redirectToRoute('app_admin_parking_spot_assign', ['id' => $parkingSpot->getId()]);
+            }
+
+            $startsAt = \DateTimeImmutable::createFromFormat('Y-m-d', (string) $request->request->get('starts_at'));
+            if (!$startsAt) {
+                $this->addFlash('error', 'Nieprawidłowa data początku przypisania.');
+
+                return $this->redirectToRoute('app_admin_parking_spot_assign', ['id' => $parkingSpot->getId()]);
+            }
+
+            $endsAtRaw = trim((string) $request->request->get('ends_at', ''));
+            $endsAt = null;
+            if ('' !== $endsAtRaw) {
+                $endsAt = \DateTimeImmutable::createFromFormat('Y-m-d', $endsAtRaw);
+                if (!$endsAt) {
+                    $this->addFlash('error', 'Nieprawidłowa data zakończenia przypisania.');
+
+                    return $this->redirectToRoute('app_admin_parking_spot_assign', ['id' => $parkingSpot->getId()]);
+                }
+
+                if ($endsAt < $startsAt) {
+                    $this->addFlash('error', 'Data zakończenia nie może być wcześniejsza niż data początku.');
+
+                    return $this->redirectToRoute('app_admin_parking_spot_assign', ['id' => $parkingSpot->getId()]);
+                }
+            }
+
+            /** @var User $currentUser */
+            $currentUser = $this->getUser();
+            $assignment = (new ParkingSpotAssignment())
+                ->setParkingSpot($parkingSpot)
+                ->setAssignedUser($assignedUser)
+                ->setAssignedByUser($currentUser)
+                ->setStartsAt($startsAt)
+                ->setEndsAt($endsAt);
+
+            $this->entityManager->persist($assignment);
+            $this->entityManager->flush();
+
+            $this->addFlash('success', 'Przypisanie miejsca zostało zapisane.');
+
+            return $this->redirectToRoute('app_admin_parking_spot_assign', ['id' => $parkingSpot->getId()]);
+        }
+
+        return $this->render('admin/parking_spot/assign.html.twig', [
+            'spot' => $parkingSpot,
+            'users' => $this->users->findBy([], ['name' => 'ASC']),
+            'assignments' => $this->assignments->findByParkingSpot($parkingSpot->getId()),
         ]);
     }
 
