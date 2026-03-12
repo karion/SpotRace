@@ -58,3 +58,17 @@ php app/bin/console app:user:promote-admin user@example.com
 - Transport SMTP: `MAILER_DSN=smtp://mailhog:1025`
 - Nadawca: `MAILER_FROM=no-reply@spotrace.local`
 - Skrzynka developerska: `http://localhost:8025`
+
+## System rezerwacji miejsc
+
+- Szczegółowe przypadki użycia: `docs/rezerwacje-miejsc.md`.
+- Rezerwacja wolnych miejsc: tylko dziś + jutro.
+- Potwierdzenie/przekazanie przypisanego miejsca: dziś + do 7 dni wprzód.
+- Dla dnia bieżącego przypisane miejsce wraca do puli po godzinie granicznej (domyślnie 07:00), jeśli nie zostało potwierdzone.
+
+### Zmienne konfiguracyjne
+
+- `APP_TIMEZONE` (domyślnie `Europe/Warsaw`)
+- `RESERVATION_CONFIRMATION_DEADLINE_HOUR` (domyślnie `7`)
+- `RESERVATION_ASSIGNED_WINDOW_DAYS` (domyślnie `7`)
+- `RESERVATION_FREE_WINDOW_DAYS` (domyślnie `1`)

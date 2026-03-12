@@ -33,6 +33,7 @@
                             <td>{{ spot.description|nl2br }}</td>
                             <td>
                                 <a class="button-link" href="{{ path('app_admin_parking_spot_edit', {id: spot.id}) }}">Edytuj</a>
+                                <a class="button-link" href="{{ path('app_admin_parking_spot_assign', {id: spot.id}) }}">Przypisania</a>
                                 <form class="inline-form" method="post" action="{{ path('app_admin_parking_spot_delete', {id: spot.id}) }}" onsubmit="return confirm('Usunąć miejsce postojowe?');">
                                     <button class="danger-btn" type="submit">Usuń</button>
                                 </form>

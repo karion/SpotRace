@@ -1,6 +1,10 @@
 parameters:
     app.allowed_email_domains: '%env(string:ALLOWED_EMAIL_DOMAINS)%'
     app.mailer_from: '%env(string:MAILER_FROM)%'
+    app.reservation.confirmation_deadline_hour: '%env(int:RESERVATION_CONFIRMATION_DEADLINE_HOUR)%'
+    app.reservation.assigned_window_days: '%env(int:RESERVATION_ASSIGNED_WINDOW_DAYS)%'
+    app.reservation.free_window_days: '%env(int:RESERVATION_FREE_WINDOW_DAYS)%'
+    app.reservation.timezone: '%env(string:APP_TIMEZONE)%'
 
 services:
     _defaults:
@@ -22,3 +26,10 @@ services:
         arguments:
             $allowedEmailDomains: '%app.allowed_email_domains%'
             $mailerFrom: '%app.mailer_from%'
+
+    App\Service\ReservationPolicy:
+        arguments:
+            $confirmationDeadlineHour: '%app.reservation.confirmation_deadline_hour%'
+            $assignedWindowDays: '%app.reservation.assigned_window_days%'
+            $freeReservationWindowDays: '%app.reservation.free_window_days%'
+            $timezone: '%app.reservation.timezone%'
