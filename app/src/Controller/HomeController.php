@@ -29,55 +29,56 @@ class HomeController extends AbstractController
     }
 
     #[Route('/', name: 'app_home', methods: ['GET'])]
-    public function index(Request $request): Response
+    public function index(): Response
     {
         /** @var User|null $user */
         $user = $this->getUser();
-
-        $selectedDate = \DateTimeImmutable::createFromFormat('Y-m-d', (string) $request->query->get('date', ''));
-        if (!$selectedDate) {
-            $selectedDate = $this->policy->today();
-        }
-
-        $assignment = null;
-        if ($user instanceof User) {
-            $assignment = $this->assignments->findUserAssignmentForDate($user, $selectedDate);
-        }
-
         $allSpots = $this->parkingSpots->findBy([], ['name' => 'ASC']);
-        $reserved = $this->reservations->findByDate($selectedDate);
-        $takenSpotIds = [];
-        foreach ($reserved as $reservation) {
-            $takenSpotIds[$reservation->getParkingSpot()->getId()] = true;
-        }
 
-        $activeAssignments = $this->assignments->findActiveForDate($selectedDate);
-        $lockedSpotIds = [];
-        foreach ($activeAssignments as $activeAssignment) {
-            $spotId = $activeAssignment->getParkingSpot()->getId();
-            if ($this->policy->isAssignmentLockedForOthers($selectedDate) && (!$assignment || $assignment->getParkingSpot()->getId() !== $spotId)) {
-                $lockedSpotIds[$spotId] = true;
+        $freeDays = [];
+        $today = $this->policy->today();
+        for ($offset = 0; $offset <= $this->policy->freeReservationWindowDays(); ++$offset) {
+            $date = $today->modify(sprintf('+%d days', $offset));
+
+            $assignment = null;
+            if ($user instanceof User) {
+                $assignment = $this->assignments->findUserAssignmentForDate($user, $date);
             }
-        }
 
-        $availableSpots = [];
-        foreach ($allSpots as $spot) {
-            if (isset($takenSpotIds[$spot->getId()]) || isset($lockedSpotIds[$spot->getId()])) {
-                continue;
+            $reserved = $this->reservations->findByDate($date);
+            $takenSpotIds = [];
+            foreach ($reserved as $reservation) {
+                $takenSpotIds[$reservation->getParkingSpot()->getId()] = true;
             }
-            $availableSpots[] = $spot;
-        }
 
-        $canReserveFree = $this->policy->isWithinFreeWindow($selectedDate);
-        $canConfirmAssigned = $assignment && $this->policy->canManageAssignedSpot($selectedDate);
+            $activeAssignments = $this->assignments->findActiveForDate($date);
+            $lockedSpotIds = [];
+            foreach ($activeAssignments as $activeAssignment) {
+                $spotId = $activeAssignment->getParkingSpot()->getId();
+                if ($this->policy->isAssignmentLockedForOthers($date) && (!$assignment || $assignment->getParkingSpot()->getId() !== $spotId)) {
+                    $lockedSpotIds[$spotId] = true;
+                }
+            }
+
+            $availableSpots = [];
+            foreach ($allSpots as $spot) {
+                if (isset($takenSpotIds[$spot->getId()]) || isset($lockedSpotIds[$spot->getId()])) {
+                    continue;
+                }
+                $availableSpots[] = $spot;
+            }
+
+            $freeDays[] = [
+                'date' => $date,
+                'assignment' => $assignment,
+                'canConfirmAssigned' => $assignment && $this->policy->canManageAssignedSpot($date),
+                'availableSpots' => $availableSpots,
+            ];
+        }
 
         return $this->render('home/index.html.twig', [
             'user' => $user,
-            'selectedDate' => $selectedDate,
-            'availableSpots' => $availableSpots,
-            'canReserveFree' => $canReserveFree,
-            'assignment' => $assignment,
-            'canConfirmAssigned' => $canConfirmAssigned,
+            'freeDays' => $freeDays,
             'users' => $this->users->findBy([], ['name' => 'ASC']),
         ]);
     }
