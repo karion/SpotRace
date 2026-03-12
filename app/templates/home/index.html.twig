@@ -8,7 +8,10 @@
         <p>Jesteś zalogowany do aplikacji.</p>
         <p>Twoje role: {{ user ? user.roles|join(', ') : '' }}</p>
         {% if user and 'ROLE_ADMIN' in user.roles %}
-            <p><a class="button-link" href="{{ path('app_admin_parking_spot_index') }}">Przejdź do panelu admina</a></p>
+            <p>
+                <a class="button-link" href="{{ path('app_admin_parking_spot_index') }}">Miejsca postojowe</a>
+                <a class="button-link" href="{{ path('app_admin_user_index') }}">Użytkownicy</a>
+            </p>
         {% endif %}
     </main>
 {% endblock %}

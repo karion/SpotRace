@@ -1,5 +1,6 @@
 parameters:
     app.allowed_email_domains: '%env(string:ALLOWED_EMAIL_DOMAINS)%'
+    app.mailer_from: '%env(string:MAILER_FROM)%'
 
 services:
     _defaults:
@@ -20,3 +21,4 @@ services:
     App\Controller\AuthController:
         arguments:
             $allowedEmailDomains: '%app.allowed_email_domains%'
+            $mailerFrom: '%app.mailer_from%'

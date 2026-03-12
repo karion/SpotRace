@@ -5,12 +5,18 @@ namespace App\Entity;
 use App\Repository\UserRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ORM\UniqueConstraint(name: 'uniq_user_email', columns: ['email'])]
-class User
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_BLOCKED = 'blocked';
+    public const STATUS_PASSWORD_RESET_REQUIRED = 'password_reset_required';
+
     #[ORM\Id]
     #[ORM\Column(type: Types::GUID)]
     private string $id;
@@ -27,6 +33,9 @@ class User
     /** @var array<int, string> */
     #[ORM\Column(type: Types::JSON)]
     private array $roles = ['ROLE_USER'];
+
+    #[ORM\Column(length: 40)]
+    private string $status = self::STATUS_ACTIVE;
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $emailVerifiedAt = null;
@@ -86,6 +95,11 @@ class User
         return $this;
     }
 
+    public function getPassword(): string
+    {
+        return $this->passwordHash;
+    }
+
     /** @return array<int, string> */
     public function getRoles(): array
     {
@@ -103,6 +117,15 @@ class User
         return $this;
     }
 
+    public function eraseCredentials(): void
+    {
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->email;
+    }
+
     public function isAdmin(): bool
     {
         return in_array('ROLE_ADMIN', $this->getRoles(), true);
@@ -115,6 +138,49 @@ class User
         $this->setRoles($roles);
 
         return $this;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): self
+    {
+        $this->status = $status;
+
+        return $this;
+    }
+
+    public function block(): self
+    {
+        $this->status = self::STATUS_BLOCKED;
+
+        return $this;
+    }
+
+    public function requirePasswordReset(): self
+    {
+        $this->status = self::STATUS_PASSWORD_RESET_REQUIRED;
+
+        return $this;
+    }
+
+    public function activate(): self
+    {
+        $this->status = self::STATUS_ACTIVE;
+
+        return $this;
+    }
+
+    public function canLogin(): bool
+    {
+        return self::STATUS_ACTIVE === $this->status;
+    }
+
+    public function canRequestPasswordReset(): bool
+    {
+        return self::STATUS_ACTIVE === $this->status || self::STATUS_PASSWORD_RESET_REQUIRED === $this->status;
     }
 
     public function getEmailVerifiedAt(): ?\DateTimeImmutable

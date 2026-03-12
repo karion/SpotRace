@@ -25,6 +25,7 @@ make composer-install
 Po uruchomieniu odwiedź:
 
 - http://localhost:8080
+- http://localhost:8025 (MailHog UI)
 
 ## Najczęściej używane komendy
 
@@ -41,6 +42,7 @@ make migrate
 - Role: `ROLE_USER` (domyślnie), `ROLE_ADMIN`
 - Rejestracja wymaga: imię, email, hasło
 - Potwierdzenie email i reset hasła działają przez link z tokenem
+- Reset hasła wysyła email przez Mailer (w dev do MailHog)
 - Sesja trwa 1 tydzień (`604800` sekund)
 - Wszystkie strony poza `/login`, `/register`, `/verify-email/*`, `/forgot-password`, `/reset-password/*` wymagają zalogowania
 - Dozwolone domeny email konfigurujesz przez `ALLOWED_EMAIL_DOMAINS` (CSV, np. `firma.pl,gmail.com`)
@@ -50,3 +52,9 @@ make migrate
 ```bash
 php app/bin/console app:user:promote-admin user@example.com
 ```
+
+## Mailer (dev)
+
+- Transport SMTP: `MAILER_DSN=smtp://mailhog:1025`
+- Nadawca: `MAILER_FROM=no-reply@spotrace.local`
+- Skrzynka developerska: `http://localhost:8025`

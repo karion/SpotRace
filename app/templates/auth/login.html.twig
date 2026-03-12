@@ -5,9 +5,13 @@
 {% block body %}
     <main class="card">
         <h1>Logowanie</h1>
+        {% if error %}
+            <div class="flash flash-error">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+        {% endif %}
         <form method="post">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
             <label>Email</label>
-            <input type="email" name="email" required>
+            <input type="email" name="email" value="{{ last_username }}" required>
             <label>Hasło</label>
             <input type="password" name="password" required>
             <button type="submit">Zaloguj</button>

@@ -4,53 +4,47 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
-use App\Service\AuthService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class AuthController extends AbstractController
 {
     public function __construct(
         private readonly UserRepository $users,
         private readonly EntityManagerInterface $entityManager,
-        private readonly AuthService $authService,
+        private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly MailerInterface $mailer,
         private readonly string $allowedEmailDomains,
+        private readonly string $mailerFrom,
     ) {
     }
 
     #[Route('/login', name: 'app_login', methods: ['GET', 'POST'])]
-    public function login(Request $request): Response
+    public function login(AuthenticationUtils $authenticationUtils): Response
     {
-        if ($this->authService->isLoggedIn()) {
+        if ($this->getUser()) {
             return $this->redirectToRoute('app_home');
         }
 
-        if ($request->isMethod('POST')) {
-            $email = (string) $request->request->get('email', '');
-            $password = (string) $request->request->get('password', '');
-
-            $user = $this->users->findOneByEmail($email);
-            if (!$user || !password_verify($password, $user->getPasswordHash())) {
-                $this->addFlash('error', 'Nieprawidłowy email lub hasło.');
-            } elseif (!$user->isEmailVerified()) {
-                $this->addFlash('error', 'Potwierdź email zanim się zalogujesz.');
-            } else {
-                $this->authService->login($user);
-
-                return $this->redirectToRoute('app_home');
-            }
-        }
-
-        return $this->render('auth/login.html.twig');
+        return $this->render('auth/login.html.twig', [
+            'last_username' => $authenticationUtils->getLastUsername(),
+            'error' => $authenticationUtils->getLastAuthenticationError(),
+        ]);
     }
 
     #[Route('/register', name: 'app_register', methods: ['GET', 'POST'])]
     public function register(Request $request): Response
     {
-        if ($this->authService->isLoggedIn()) {
+        if ($this->getUser()) {
             return $this->redirectToRoute('app_home');
         }
 
@@ -69,9 +63,11 @@ class AuthController extends AbstractController
                 $user = (new User())
                     ->setName($name)
                     ->setEmail($email)
-                    ->setPasswordHash(password_hash($password, PASSWORD_ARGON2ID))
                     ->setRoles(['ROLE_USER'])
+                    ->setStatus(User::STATUS_ACTIVE)
                     ->setEmailVerificationToken($token);
+
+                $user->setPasswordHash($this->passwordHasher->hashPassword($user, $password));
 
                 $this->entityManager->persist($user);
                 $this->entityManager->flush();
@@ -115,18 +111,18 @@ class AuthController extends AbstractController
             $email = (string) $request->request->get('email', '');
             $user = $this->users->findOneByEmail($email);
 
-            if ($user) {
+            if ($user && $user->canRequestPasswordReset()) {
                 $token = bin2hex(random_bytes(32));
                 $user
                     ->setPasswordResetToken($token)
                     ->setPasswordResetExpiresAt(new \DateTimeImmutable('+1 hour'));
                 $this->entityManager->flush();
 
-                $resetLink = $this->generateUrl('app_reset_password', ['token' => $token]);
-                $this->addFlash('success', sprintf('Link do resetu hasła: %s', $resetLink));
-            } else {
-                $this->addFlash('success', 'Jeśli konto istnieje, link do resetu został wygenerowany.');
+                $resetLink = $this->generateUrl('app_reset_password', ['token' => $token], UrlGeneratorInterface::ABSOLUTE_URL);
+                $this->sendPasswordResetEmail($user, $resetLink);
             }
+
+            $this->addFlash('success', 'Jeśli konto istnieje, link do resetu został wysłany na email.');
 
             return $this->redirectToRoute('app_login');
         }
@@ -138,7 +134,7 @@ class AuthController extends AbstractController
     public function resetPassword(Request $request, string $token): Response
     {
         $user = $this->users->findOneByPasswordResetToken($token);
-        if (!$user || !$user->getPasswordResetExpiresAt() || $user->getPasswordResetExpiresAt() < new \DateTimeImmutable()) {
+        if (!$user || !$user->canRequestPasswordReset() || !$user->getPasswordResetExpiresAt() || $user->getPasswordResetExpiresAt() < new \DateTimeImmutable()) {
             $this->addFlash('error', 'Token resetu jest nieprawidłowy lub wygasł.');
 
             return $this->redirectToRoute('app_forgot_password');
@@ -150,9 +146,10 @@ class AuthController extends AbstractController
                 $this->addFlash('error', 'Hasło musi mieć minimum 8 znaków.');
             } else {
                 $user
-                    ->setPasswordHash(password_hash($password, PASSWORD_ARGON2ID))
+                    ->setPasswordHash($this->passwordHasher->hashPassword($user, $password))
                     ->setPasswordResetToken(null)
-                    ->setPasswordResetExpiresAt(null);
+                    ->setPasswordResetExpiresAt(null)
+                    ->activate();
 
                 $this->entityManager->flush();
                 $this->addFlash('success', 'Hasło zostało zmienione.');
@@ -165,12 +162,24 @@ class AuthController extends AbstractController
     }
 
     #[Route('/logout', name: 'app_logout', methods: ['POST'])]
-    public function logout(): Response
+    public function logout(): never
     {
-        $this->authService->logout();
-        $this->addFlash('success', 'Wylogowano.');
+        throw new \LogicException('This method can be blank - it will be intercepted by the logout key on your firewall.');
+    }
 
-        return $this->redirectToRoute('app_login');
+    private function sendPasswordResetEmail(User $user, string $resetLink): void
+    {
+        $message = (new Email())
+            ->from($this->mailerFrom)
+            ->to($user->getEmail())
+            ->subject('Reset hasła w SpotRace')
+            ->text("Cześć {$user->getName()},\n\nAby zresetować hasło, użyj linku:\n{$resetLink}\n\nLink jest ważny przez 1 godzinę.");
+
+        try {
+            $this->mailer->send($message);
+        } catch (TransportExceptionInterface) {
+            $this->addFlash('error', 'Nie udało się wysłać wiadomości email. Spróbuj ponownie później.');
+        }
     }
 
     /** @return array<int, string> */

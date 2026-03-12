@@ -11,8 +11,11 @@ services:
     environment:
       APP_ENV: dev
       APP_DEBUG: 1
+      MAILER_DSN: smtp://mailhog:1025
+      MAILER_FROM: no-reply@spotrace.local
     depends_on:
       - mysql
+      - mailhog
 
   mysql:
     image: mysql:8.0
@@ -26,6 +29,13 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: spotrace_mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
   composer:
     image: composer:2
