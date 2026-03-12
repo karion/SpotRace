@@ -8,3 +8,5 @@ framework:
         cookie_lifetime: 604800
         gc_maxlifetime: 604800
         cookie_samesite: lax
+    mailer:
+        dsn: '%env(MAILER_DSN)%'
