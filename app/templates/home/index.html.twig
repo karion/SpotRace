@@ -16,32 +16,22 @@
         <h2>Dostępne miejsca (podział na dni)</h2>
         {% for day in freeDays %}
             <section>
-                <h3>{{ day.date|date('Y-m-d') }}</h3>
+                <h3>{{ day.displayDate }}</h3>
 
                 {% if day.assignment %}
                     <h4>Twoje przypisane miejsce</h4>
                     <p><strong>{{ day.assignment.parkingSpot.name }}</strong> ({{ day.assignment.parkingSpot.description }})</p>
 
                     {% if day.canConfirmAssigned %}
-                        <form method="post" action="{{ path('app_reservation_confirm_assigned') }}">
-                            <input type="hidden" name="_token" value="{{ csrf_token('confirm-assigned-' ~ day.date|date('Y-m-d')) }}">
-                            <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
-                            <button type="submit">Potwierdź przypisane miejsce na {{ day.date|date('Y-m-d') }}</button>
-                        </form>
+                        <div style="display: flex; gap: .6rem; align-items: center;">
+                            <form method="post" action="{{ path('app_reservation_confirm_assigned') }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('confirm-assigned-' ~ day.date|date('Y-m-d')) }}">
+                                <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
+                                <button type="submit">Potwierdź</button>
+                            </form>
 
-                        <form method="post" action="{{ path('app_reservation_delegate_assigned') }}">
-                            <input type="hidden" name="_token" value="{{ csrf_token('delegate-assigned-' ~ day.date|date('Y-m-d')) }}">
-                            <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
-                            <label for="target_user_id_{{ day.date|date('Ymd') }}">Przekaż miejsce innej osobie</label>
-                            <select id="target_user_id_{{ day.date|date('Ymd') }}" name="target_user_id" required>
-                                {% for managedUser in users %}
-                                    {% if managedUser.id != user.id %}
-                                        <option value="{{ managedUser.id }}">{{ managedUser.name }} ({{ managedUser.email }})</option>
-                                    {% endif %}
-                                {% endfor %}
-                            </select>
-                            <button type="submit">Przekaż miejsce</button>
-                        </form>
+                            <a class="button-link" href="{{ path('app_reservation_delegate_assigned', { date: day.date|date('Y-m-d') }) }}">Przekaż</a>
+                        </div>
                     {% endif %}
                 {% endif %}
 

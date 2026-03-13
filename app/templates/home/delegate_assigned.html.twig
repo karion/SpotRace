@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}SpotRace - przekaż miejsce{% endblock %}
+
+{% block body %}
+    <main class="card">
+        <h1>Przekaż przypisane miejsce</h1>
+        <p>Dzień: <strong>{{ displayDate }}</strong></p>
+        <p>Miejsce: <strong>{{ assignment.parkingSpot.name }}</strong> ({{ assignment.parkingSpot.description }})</p>
+
+        <form method="post" action="{{ path('app_reservation_delegate_assigned_submit') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('delegate-assigned-' ~ date|date('Y-m-d')) }}">
+            <input type="hidden" name="date" value="{{ date|date('Y-m-d') }}">
+
+            <label for="target_user_id">Wybierz użytkownika</label>
+            <select id="target_user_id" name="target_user_id" required>
+                {% for managedUser in users %}
+                    {% if managedUser.id != currentUser.id %}
+                        <option value="{{ managedUser.id }}">{{ managedUser.name }} ({{ managedUser.email }})</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+
+            <p style="margin-top: 1rem; display: flex; gap: .6rem;">
+                <button type="submit">Przekaż miejsce</button>
+                <a class="button-link" href="{{ path('app_home') }}">Anuluj</a>
+            </p>
+        </form>
+    </main>
+{% endblock %}

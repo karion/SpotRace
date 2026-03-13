@@ -70,6 +70,7 @@ class HomeController extends AbstractController
 
             $freeDays[] = [
                 'date' => $date,
+                'displayDate' => $this->formatPolishShortDate($date),
                 'assignment' => $assignment,
                 'canConfirmAssigned' => $assignment && $this->policy->canManageAssignedSpot($date),
                 'availableSpots' => $availableSpots,
@@ -79,7 +80,35 @@ class HomeController extends AbstractController
         return $this->render('home/index.html.twig', [
             'user' => $user,
             'freeDays' => $freeDays,
+        ]);
+    }
+
+    #[Route('/reservations/delegate-assigned', name: 'app_reservation_delegate_assigned', methods: ['GET'])]
+    public function delegateAssignedForm(Request $request): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $date = $this->mustParseDate((string) $request->query->get('date'));
+
+        if (!$this->policy->canManageAssignedSpot($date)) {
+            $this->addFlash('error', 'Przekazanie miejsca jest możliwe do 7 dni wprzód.');
+
+            return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
+        }
+
+        $assignment = $this->assignments->findUserAssignmentForDate($user, $date);
+        if (!$assignment) {
+            $this->addFlash('error', 'Nie masz przypisanego miejsca dla wybranego dnia.');
+
+            return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
+        }
+
+        return $this->render('home/delegate_assigned.html.twig', [
+            'date' => $date,
+            'displayDate' => $this->formatPolishShortDate($date),
+            'assignment' => $assignment,
             'users' => $this->users->findBy([], ['name' => 'ASC']),
+            'currentUser' => $user,
         ]);
     }
 
@@ -195,8 +224,8 @@ class HomeController extends AbstractController
         return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
     }
 
-    #[Route('/reservations/delegate-assigned', name: 'app_reservation_delegate_assigned', methods: ['POST'])]
-    public function delegateAssigned(Request $request): RedirectResponse
+    #[Route('/reservations/delegate-assigned/submit', name: 'app_reservation_delegate_assigned_submit', methods: ['POST'])]
+    public function delegateAssignedSubmit(Request $request): RedirectResponse
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -270,5 +299,22 @@ class HomeController extends AbstractController
         if (!$this->isCsrfTokenValid($tokenId, (string) $request->request->get('_token'))) {
             throw $this->createAccessDeniedException('Nieprawidłowy token CSRF.');
         }
+    }
+
+    private function formatPolishShortDate(\DateTimeImmutable $date): string
+    {
+        $days = [
+            'pon.',
+            'wt.',
+            'śr.',
+            'czw.',
+            'pt.',
+            'sob.',
+            'niedz.',
+        ];
+
+        $dayName = $days[(int) $date->format('N') - 1];
+
+        return sprintf('%s %s', $dayName, $date->format('d/m'));
     }
 }
