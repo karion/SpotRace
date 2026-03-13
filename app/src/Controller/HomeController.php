@@ -46,6 +46,11 @@ class HomeController extends AbstractController
                 $assignment = $this->assignments->findUserAssignmentForDate($user, $date);
             }
 
+            $userReservation = null;
+            if ($user instanceof User) {
+                $userReservation = $this->reservations->findUserReservationForDate($user, $date);
+            }
+
             $assignedSpotReserved = false;
             if ($assignment) {
                 $assignedSpotReserved = null !== $this->reservations->findSpotReservationForDate($assignment->getParkingSpot()->getId(), $date);
@@ -78,8 +83,11 @@ class HomeController extends AbstractController
                 'date' => $date,
                 'displayDate' => $this->formatPolishShortDate($date),
                 'assignment' => $assignment,
-                'canManageAssigned' => $assignment && $this->policy->canManageAssignedSpot($date) && !$assignedSpotReserved,
+                'userReservation' => $userReservation,
+                'canManageAssigned' => $assignment && $this->policy->canManageAssignedSpot($date) && !$assignedSpotReserved && !$userReservation,
                 'assignedSpotReserved' => $assignedSpotReserved,
+                'canReserveFree' => !$userReservation,
+                'canReleaseReservation' => $userReservation && $this->policy->canReleaseReservation($date),
                 'availableSpots' => $availableSpots,
             ];
         }
@@ -176,7 +184,13 @@ class HomeController extends AbstractController
             ->setType('free');
 
         $this->entityManager->persist($reservation);
-        $this->entityManager->flush();
+        try {
+            $this->entityManager->flush();
+        } catch (UniqueConstraintViolationException) {
+            $this->addFlash('error', 'Masz już rezerwację w tym dniu lub miejsce zostało przed chwilą zajęte.');
+
+            return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
+        }
 
         $this->addFlash('success', 'Wolne miejsce zostało zarezerwowane.');
 
@@ -285,9 +299,44 @@ class HomeController extends AbstractController
             ->setType('assigned_delegated');
 
         $this->entityManager->persist($reservation);
-        $this->entityManager->flush();
+        try {
+            $this->entityManager->flush();
+        } catch (UniqueConstraintViolationException) {
+            $this->addFlash('error', 'Nie udało się przekazać miejsca. Użytkownik docelowy ma już rezerwację lub miejsce zostało zajęte.');
+
+            return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
+        }
 
         $this->addFlash('success', 'Przypisane miejsce zostało przekazane innej osobie.');
+
+        return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
+    }
+
+    #[Route('/reservations/release', name: 'app_reservation_release', methods: ['POST'])]
+    public function releaseReservation(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        $date = $this->mustParseDate((string) $request->request->get('date'));
+        $this->validateCsrf($request, 'release-reservation-'.$date->format('Y-m-d'));
+
+        if (!$this->policy->canReleaseReservation($date)) {
+            $this->addFlash('error', 'Zwolnienie miejsca jest możliwe tylko dziś przed 07:00.');
+
+            return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
+        }
+
+        $reservation = $this->reservations->findUserReservationForDate($user, $date);
+        if (!$reservation) {
+            $this->addFlash('error', 'Nie masz rezerwacji do zwolnienia w tym dniu.');
+
+            return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
+        }
+
+        $this->entityManager->remove($reservation);
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'Twoja rezerwacja została zwolniona.');
 
         return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
     }
