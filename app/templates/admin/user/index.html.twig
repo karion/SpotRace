@@ -3,46 +3,52 @@
 {% block title %}Panel admina - użytkownicy{% endblock %}
 
 {% block body %}
-    <main class="card">
-        <h1>Panel administratora — użytkownicy</h1>
-        {% if users is empty %}
-            <p>Brak użytkowników.</p>
-        {% else %}
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Email</th>
-                        <th>Imię</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Akcje</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for managedUser in users %}
-                        <tr>
-                            <td>{{ managedUser.email }}</td>
-                            <td>{{ managedUser.name }}</td>
-                            <td>{{ managedUser.roles|join(', ') }}</td>
-                            <td>{{ managedUser.status }}</td>
-                            <td>
-                                <form class="inline-form" method="post" action="{{ path('app_admin_user_block', {id: managedUser.id}) }}">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}">
-                                    <button class="danger-btn" type="submit">Zablokuj</button>
-                                </form>
-                                <form class="inline-form" method="post" action="{{ path('app_admin_user_force_password_reset', {id: managedUser.id}) }}">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}">
-                                    <button type="submit">Wymuś reset hasła</button>
-                                </form>
-                                <form class="inline-form" method="post" action="{{ path('app_admin_user_unlock', {id: managedUser.id}) }}">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}">
-                                    <button type="submit">Odblokuj</button>
-                                </form>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% endif %}
+    <main class="card bg-body-tertiary shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h3 mb-4">Panel administratora — użytkownicy</h1>
+            {% if users is empty %}
+                <p class="mb-0">Brak użytkowników.</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Imię</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for managedUser in users %}
+                                <tr>
+                                    <td>{{ managedUser.email }}</td>
+                                    <td>{{ managedUser.name }}</td>
+                                    <td>{{ managedUser.roles|join(', ') }}</td>
+                                    <td>{{ managedUser.status }}</td>
+                                    <td>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <form method="post" action="{{ path('app_admin_user_block', {id: managedUser.id}) }}">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}">
+                                                <button class="btn btn-danger btn-sm" type="submit">Zablokuj</button>
+                                            </form>
+                                            <form method="post" action="{{ path('app_admin_user_force_password_reset', {id: managedUser.id}) }}">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}">
+                                                <button class="btn btn-outline-warning btn-sm" type="submit">Wymuś reset hasła</button>
+                                            </form>
+                                            <form method="post" action="{{ path('app_admin_user_unlock', {id: managedUser.id}) }}">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}">
+                                                <button class="btn btn-outline-success btn-sm" type="submit">Odblokuj</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
     </main>
 {% endblock %}

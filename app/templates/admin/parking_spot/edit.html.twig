@@ -3,15 +3,17 @@
 {% block title %}Edycja miejsca postojowego{% endblock %}
 
 {% block body %}
-    <main class="card">
-        <h1>Edytuj miejsce postojowe</h1>
+    <main class="card bg-body-tertiary shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h3 mb-4">Edytuj miejsce postojowe</h1>
 
-        {{ form_start(editForm) }}
-            {{ form_row(editForm.name) }}
-            {{ form_row(editForm.description) }}
-            {{ form_row(editForm.save) }}
-        {{ form_end(editForm) }}
+            {{ form_start(editForm) }}
+                {{ form_row(editForm.name) }}
+                {{ form_row(editForm.description) }}
+                {{ form_row(editForm.save) }}
+            {{ form_end(editForm) }}
 
-        <p><a href="{{ path('app_admin_parking_spot_index') }}">← Powrót do listy</a></p>
+            <p class="mt-4 mb-0"><a href="{{ path('app_admin_parking_spot_index') }}">← Powrót do listy</a></p>
+        </div>
     </main>
 {% endblock %}

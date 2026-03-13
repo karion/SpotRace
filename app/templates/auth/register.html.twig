@@ -3,17 +3,25 @@
 {% block title %}Rejestracja{% endblock %}
 
 {% block body %}
-    <main class="card">
-        <h1>Rejestracja</h1>
-        <form method="post">
-            <label>Imię</label>
-            <input type="text" name="name" required>
-            <label>Email</label>
-            <input type="email" name="email" required>
-            <label>Hasło</label>
-            <input type="password" name="password" required minlength="8" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" title="Minimum 8 znaków, co najmniej 1 wielka i mała litera oraz 1 cyfra">
-            <button type="submit">Zarejestruj</button>
-        </form>
-        <p><a href="{{ path('app_login') }}">Masz już konto? Zaloguj się</a></p>
+    <main class="card bg-body-tertiary shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h3 mb-4">Rejestracja</h1>
+            <form method="post" class="vstack gap-3">
+                <div>
+                    <label class="form-label">Imię</label>
+                    <input class="form-control" type="text" name="name" required>
+                </div>
+                <div>
+                    <label class="form-label">Email</label>
+                    <input class="form-control" type="email" name="email" required>
+                </div>
+                <div>
+                    <label class="form-label">Hasło</label>
+                    <input class="form-control" type="password" name="password" required minlength="8" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" title="Minimum 8 znaków, co najmniej 1 wielka i mała litera oraz 1 cyfra">
+                </div>
+                <button class="btn btn-primary" type="submit">Zarejestruj</button>
+            </form>
+            <p class="mt-4 mb-0"><a href="{{ path('app_login') }}">Masz już konto? Zaloguj się</a></p>
+        </div>
     </main>
 {% endblock %}

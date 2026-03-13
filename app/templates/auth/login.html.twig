@@ -3,20 +3,28 @@
 {% block title %}Logowanie{% endblock %}
 
 {% block body %}
-    <main class="card">
-        <h1>Logowanie</h1>
-        {% if error %}
-            <div class="flash flash-error">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
-        {% endif %}
-        <form method="post">
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-            <label>Email</label>
-            <input type="email" name="email" value="{{ last_username }}" required>
-            <label>Hasło</label>
-            <input type="password" name="password" required>
-            <button type="submit">Zaloguj</button>
-        </form>
-        <p><a href="{{ path('app_register') }}">Załóż konto</a></p>
-        <p><a href="{{ path('app_forgot_password') }}">Nie pamiętasz hasła?</a></p>
+    <main class="card bg-body-tertiary shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h3 mb-4">Logowanie</h1>
+            {% if error %}
+                <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+            {% endif %}
+            <form method="post" class="vstack gap-3">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                <div>
+                    <label class="form-label">Email</label>
+                    <input class="form-control" type="email" name="email" value="{{ last_username }}" required>
+                </div>
+                <div>
+                    <label class="form-label">Hasło</label>
+                    <input class="form-control" type="password" name="password" required>
+                </div>
+                <button class="btn btn-primary" type="submit">Zaloguj</button>
+            </form>
+            <div class="mt-4 d-flex flex-column gap-2">
+                <a href="{{ path('app_register') }}">Załóż konto</a>
+                <a href="{{ path('app_forgot_password') }}">Nie pamiętasz hasła?</a>
+            </div>
+        </div>
     </main>
 {% endblock %}
