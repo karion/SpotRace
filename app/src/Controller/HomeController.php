@@ -9,6 +9,7 @@ use App\Repository\ParkingSpotAssignmentRepository;
 use App\Repository\ParkingSpotRepository;
 use App\Repository\UserRepository;
 use App\Service\ReservationPolicy;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -45,6 +46,11 @@ class HomeController extends AbstractController
                 $assignment = $this->assignments->findUserAssignmentForDate($user, $date);
             }
 
+            $assignedSpotReserved = false;
+            if ($assignment) {
+                $assignedSpotReserved = null !== $this->reservations->findSpotReservationForDate($assignment->getParkingSpot()->getId(), $date);
+            }
+
             $reserved = $this->reservations->findByDate($date);
             $takenSpotIds = [];
             foreach ($reserved as $reservation) {
@@ -72,7 +78,8 @@ class HomeController extends AbstractController
                 'date' => $date,
                 'displayDate' => $this->formatPolishShortDate($date),
                 'assignment' => $assignment,
-                'canConfirmAssigned' => $assignment && $this->policy->canManageAssignedSpot($date),
+                'canManageAssigned' => $assignment && $this->policy->canManageAssignedSpot($date) && !$assignedSpotReserved,
+                'assignedSpotReserved' => $assignedSpotReserved,
                 'availableSpots' => $availableSpots,
             ];
         }
@@ -217,7 +224,13 @@ class HomeController extends AbstractController
             ->setType('assigned_confirmed');
 
         $this->entityManager->persist($reservation);
-        $this->entityManager->flush();
+        try {
+            $this->entityManager->flush();
+        } catch (UniqueConstraintViolationException) {
+            $this->addFlash('error', 'To miejsce zostało już wcześniej potwierdzone lub zarezerwowane. Odśwież listę miejsc.');
+
+            return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
+        }
 
         $this->addFlash('success', 'Przypisane miejsce zostało potwierdzone.');
 

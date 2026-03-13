@@ -25,7 +25,7 @@
                             <div class="d-flex justify-content-between gap-3 align-items-center flex-wrap mb-3">
                                 <p class="mb-0"><strong>{{ day.assignment.parkingSpot.name }}</strong> ({{ day.assignment.parkingSpot.description }})</p>
 
-                                {% if day.canConfirmAssigned %}
+                                {% if day.canManageAssigned %}
                                     <div class="d-flex gap-2 align-items-center flex-wrap">
                                         <form method="post" action="{{ path('app_reservation_confirm_assigned') }}">
                                             <input type="hidden" name="_token" value="{{ csrf_token('confirm-assigned-' ~ day.date|date('Y-m-d')) }}">
@@ -35,6 +35,8 @@
 
                                         <a class="btn btn-outline-light btn-sm" href="{{ path('app_reservation_delegate_assigned', { date: day.date|date('Y-m-d') }) }}">Przekaż</a>
                                     </div>
+                                {% elseif day.assignedSpotReserved %}
+                                    <span class="badge text-bg-success">Miejsce już potwierdzone</span>
                                 {% endif %}
                             </div>
                         {% endif %}
