@@ -3,70 +3,76 @@
 {% block title %}SpotRace - rezerwacje{% endblock %}
 
 {% block body %}
-    <main class="card">
-        <h1>Witaj, {{ user ? user.name : 'gościu' }}!</h1>
-        <p>Zarządzaj rezerwacjami miejsc parkingowych.</p>
-        {% if user and 'ROLE_ADMIN' in user.roles %}
-            <p>
-                <a class="button-link" href="{{ path('app_admin_parking_spot_index') }}">Miejsca postojowe</a>
-                <a class="button-link" href="{{ path('app_admin_user_index') }}">Użytkownicy</a>
-            </p>
-        {% endif %}
+    <main class="card bg-body-tertiary shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h3">Witaj, {{ user ? user.name : 'gościu' }}!</h1>
+            <p class="text-body-secondary">Zarządzaj rezerwacjami miejsc parkingowych.</p>
+            {% if user and 'ROLE_ADMIN' in user.roles %}
+                <div class="d-flex gap-2 flex-wrap mb-4">
+                    <a class="btn btn-primary btn-sm" href="{{ path('app_admin_parking_spot_index') }}">Miejsca postojowe</a>
+                    <a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_user_index') }}">Użytkownicy</a>
+                </div>
+            {% endif %}
 
-        <h2>Dostępne miejsca (podział na dni)</h2>
-        {% for day in freeDays %}
-            <section>
-                <h3>{{ day.displayDate }}</h3>
+            <h2 class="h4 mb-3">Dostępne miejsca (podział na dni)</h2>
+            <div class="vstack gap-4">
+                {% for day in freeDays %}
+                    <section class="border border-secondary-subtle rounded p-3">
+                        <h3 class="h5">{{ day.displayDate }}</h3>
 
-                {% if day.assignment %}
-                    <h4>Twoje przypisane miejsce</h4>
-                    <div class="assigned-spot-row">
-                        <p class="assigned-spot-details"><strong>{{ day.assignment.parkingSpot.name }}</strong> ({{ day.assignment.parkingSpot.description }})</p>
+                        {% if day.assignment %}
+                            <h4 class="h6 mt-3">Twoje przypisane miejsce</h4>
+                            <div class="d-flex justify-content-between gap-3 align-items-center flex-wrap mb-3">
+                                <p class="mb-0"><strong>{{ day.assignment.parkingSpot.name }}</strong> ({{ day.assignment.parkingSpot.description }})</p>
 
-                        {% if day.canConfirmAssigned %}
-                            <div class="assigned-spot-actions">
-                                <form class="inline-form" method="post" action="{{ path('app_reservation_confirm_assigned') }}">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('confirm-assigned-' ~ day.date|date('Y-m-d')) }}">
-                                    <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
-                                    <button type="submit">Potwierdź</button>
-                                </form>
+                                {% if day.canConfirmAssigned %}
+                                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                                        <form method="post" action="{{ path('app_reservation_confirm_assigned') }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('confirm-assigned-' ~ day.date|date('Y-m-d')) }}">
+                                            <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
+                                            <button class="btn btn-primary btn-sm" type="submit">Potwierdź</button>
+                                        </form>
 
-                                <a class="button-link button-link-secondary" href="{{ path('app_reservation_delegate_assigned', { date: day.date|date('Y-m-d') }) }}">Przekaż</a>
+                                        <a class="btn btn-outline-light btn-sm" href="{{ path('app_reservation_delegate_assigned', { date: day.date|date('Y-m-d') }) }}">Przekaż</a>
+                                    </div>
+                                {% endif %}
                             </div>
                         {% endif %}
-                    </div>
-                {% endif %}
 
-                {% if day.availableSpots is empty %}
-                    <p>Brak wolnych miejsc.</p>
-                {% else %}
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Miejsce</th>
-                                <th>Opis</th>
-                                <th>Akcja</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for spot in day.availableSpots %}
-                                <tr>
-                                    <td>{{ spot.name }}</td>
-                                    <td>{{ spot.description }}</td>
-                                    <td>
-                                        <form class="inline-form" method="post" action="{{ path('app_reservation_free') }}">
-                                            <input type="hidden" name="_token" value="{{ csrf_token('reserve-free-' ~ day.date|date('Y-m-d')) }}">
-                                            <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
-                                            <input type="hidden" name="spot_id" value="{{ spot.id }}">
-                                            <button type="submit">Rezerwuj</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                {% endif %}
-            </section>
-        {% endfor %}
+                        {% if day.availableSpots is empty %}
+                            <p class="mb-0">Brak wolnych miejsc.</p>
+                        {% else %}
+                            <div class="table-responsive">
+                                <table class="table table-dark table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Miejsce</th>
+                                            <th>Opis</th>
+                                            <th>Akcja</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for spot in day.availableSpots %}
+                                            <tr>
+                                                <td>{{ spot.name }}</td>
+                                                <td>{{ spot.description }}</td>
+                                                <td>
+                                                    <form method="post" action="{{ path('app_reservation_free') }}">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token('reserve-free-' ~ day.date|date('Y-m-d')) }}">
+                                                        <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
+                                                        <input type="hidden" name="spot_id" value="{{ spot.id }}">
+                                                        <button class="btn btn-primary btn-sm" type="submit">Rezerwuj</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+                    </section>
+                {% endfor %}
+            </div>
+        </div>
     </main>
 {% endblock %}

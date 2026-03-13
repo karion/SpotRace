@@ -3,28 +3,32 @@
 {% block title %}SpotRace - przekaż miejsce{% endblock %}
 
 {% block body %}
-    <main class="card">
-        <h1>Przekaż przypisane miejsce</h1>
-        <p>Dzień: <strong>{{ displayDate }}</strong></p>
-        <p>Miejsce: <strong>{{ assignment.parkingSpot.name }}</strong> ({{ assignment.parkingSpot.description }})</p>
+    <main class="card bg-body-tertiary shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h3">Przekaż przypisane miejsce</h1>
+            <p>Dzień: <strong>{{ displayDate }}</strong></p>
+            <p>Miejsce: <strong>{{ assignment.parkingSpot.name }}</strong> ({{ assignment.parkingSpot.description }})</p>
 
-        <form method="post" action="{{ path('app_reservation_delegate_assigned_submit') }}">
-            <input type="hidden" name="_token" value="{{ csrf_token('delegate-assigned-' ~ date|date('Y-m-d')) }}">
-            <input type="hidden" name="date" value="{{ date|date('Y-m-d') }}">
+            <form method="post" action="{{ path('app_reservation_delegate_assigned_submit') }}" class="vstack gap-3">
+                <input type="hidden" name="_token" value="{{ csrf_token('delegate-assigned-' ~ date|date('Y-m-d')) }}">
+                <input type="hidden" name="date" value="{{ date|date('Y-m-d') }}">
 
-            <label for="target_user_id">Wybierz użytkownika</label>
-            <select id="target_user_id" name="target_user_id" required>
-                {% for managedUser in users %}
-                    {% if managedUser.id != currentUser.id %}
-                        <option value="{{ managedUser.id }}">{{ managedUser.name }} ({{ managedUser.email }})</option>
-                    {% endif %}
-                {% endfor %}
-            </select>
+                <div>
+                    <label class="form-label" for="target_user_id">Wybierz użytkownika</label>
+                    <select class="form-select" id="target_user_id" name="target_user_id" required>
+                        {% for managedUser in users %}
+                            {% if managedUser.id != currentUser.id %}
+                                <option value="{{ managedUser.id }}">{{ managedUser.name }} ({{ managedUser.email }})</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
 
-            <p style="margin-top: 1rem; display: flex; gap: .6rem; align-items: stretch;">
-                <button type="submit">Przekaż miejsce</button>
-                <a class="button-link button-link-secondary form-cancel-link" href="{{ path('app_home') }}">Anuluj</a>
-            </p>
-        </form>
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-primary" type="submit">Przekaż miejsce</button>
+                    <a class="btn btn-outline-light" href="{{ path('app_home') }}">Anuluj</a>
+                </div>
+            </form>
+        </div>
     </main>
 {% endblock %}
