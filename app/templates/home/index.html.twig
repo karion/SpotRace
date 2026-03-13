@@ -20,19 +20,21 @@
 
                 {% if day.assignment %}
                     <h4>Twoje przypisane miejsce</h4>
-                    <p><strong>{{ day.assignment.parkingSpot.name }}</strong> ({{ day.assignment.parkingSpot.description }})</p>
+                    <div class="assigned-spot-row">
+                        <p class="assigned-spot-details"><strong>{{ day.assignment.parkingSpot.name }}</strong> ({{ day.assignment.parkingSpot.description }})</p>
 
-                    {% if day.canConfirmAssigned %}
-                        <div style="display: flex; gap: .6rem; align-items: center;">
-                            <form method="post" action="{{ path('app_reservation_confirm_assigned') }}">
-                                <input type="hidden" name="_token" value="{{ csrf_token('confirm-assigned-' ~ day.date|date('Y-m-d')) }}">
-                                <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
-                                <button type="submit">Potwierdź</button>
-                            </form>
+                        {% if day.canConfirmAssigned %}
+                            <div class="assigned-spot-actions">
+                                <form class="inline-form" method="post" action="{{ path('app_reservation_confirm_assigned') }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('confirm-assigned-' ~ day.date|date('Y-m-d')) }}">
+                                    <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
+                                    <button type="submit">Potwierdź</button>
+                                </form>
 
-                            <a class="button-link" href="{{ path('app_reservation_delegate_assigned', { date: day.date|date('Y-m-d') }) }}">Przekaż</a>
-                        </div>
-                    {% endif %}
+                                <a class="button-link button-link-secondary" href="{{ path('app_reservation_delegate_assigned', { date: day.date|date('Y-m-d') }) }}">Przekaż</a>
+                            </div>
+                        {% endif %}
+                    </div>
                 {% endif %}
 
                 {% if day.availableSpots is empty %}
