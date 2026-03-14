@@ -89,7 +89,7 @@ class AdminParkingSpotController extends AbstractController
                 return $this->redirectToRoute('app_admin_parking_spot_assign', ['id' => $parkingSpot->getId()]);
             }
 
-            $startsAt = \DateTimeImmutable::createFromFormat('Y-m-d', (string) $request->request->get('starts_at'));
+            $startsAt = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $request->request->get('starts_at'));
             if (!$startsAt) {
                 $this->addFlash('error', 'Nieprawidłowa data początku przypisania.');
 
@@ -99,7 +99,7 @@ class AdminParkingSpotController extends AbstractController
             $endsAtRaw = trim((string) $request->request->get('ends_at', ''));
             $endsAt = null;
             if ('' !== $endsAtRaw) {
-                $endsAt = \DateTimeImmutable::createFromFormat('Y-m-d', $endsAtRaw);
+                $endsAt = \DateTimeImmutable::createFromFormat('!Y-m-d', $endsAtRaw);
                 if (!$endsAt) {
                     $this->addFlash('error', 'Nieprawidłowa data zakończenia przypisania.');
 
@@ -177,7 +177,7 @@ class AdminParkingSpotController extends AbstractController
                 return $this->redirectToRoute('app_admin_parking_spot_assignment_edit', ['assignment' => $assignment->getId()]);
             }
 
-            $startsAt = \DateTimeImmutable::createFromFormat('Y-m-d', (string) $request->request->get('starts_at'));
+            $startsAt = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $request->request->get('starts_at'));
             if (!$startsAt) {
                 $this->addFlash('error', 'Nieprawidłowa data początku przypisania.');
 
@@ -187,7 +187,7 @@ class AdminParkingSpotController extends AbstractController
             $endsAtRaw = trim((string) $request->request->get('ends_at', ''));
             $endsAt = null;
             if ('' !== $endsAtRaw) {
-                $endsAt = \DateTimeImmutable::createFromFormat('Y-m-d', $endsAtRaw);
+                $endsAt = \DateTimeImmutable::createFromFormat('!Y-m-d', $endsAtRaw);
                 if (!$endsAt) {
                     $this->addFlash('error', 'Nieprawidłowa data zakończenia przypisania.');
 
