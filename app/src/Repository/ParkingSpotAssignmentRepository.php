@@ -52,4 +52,22 @@ class ParkingSpotAssignmentRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function hasOverlappingAssignmentForSpot(
+        string $spotId,
+        \DateTimeImmutable $startsAt,
+        ?\DateTimeImmutable $endsAt,
+    ): bool {
+        $qb = $this->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->join('a.parkingSpot', 's')
+            ->andWhere('s.id = :spotId')
+            ->andWhere('a.startsAt <= :newEnd')
+            ->andWhere('a.endsAt IS NULL OR a.endsAt >= :newStart')
+            ->setParameter('spotId', $spotId)
+            ->setParameter('newStart', $startsAt)
+            ->setParameter('newEnd', $endsAt ?? new \DateTimeImmutable('9999-12-31'));
+
+        return (int) $qb->getQuery()->getSingleScalarResult() > 0;
+    }
 }

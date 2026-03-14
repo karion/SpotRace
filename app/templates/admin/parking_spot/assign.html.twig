@@ -43,6 +43,7 @@
                                 <th>Użytkownik</th>
                                 <th>Przypisał</th>
                                 <th>Zakres</th>
+                                <th class="text-end">Akcje</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -54,6 +55,12 @@
                                         {{ assignment.startsAt|date('Y-m-d') }}
                                         -
                                         {{ assignment.endsAt ? assignment.endsAt|date('Y-m-d') : 'bezterminowo' }}
+                                    </td>
+                                    <td class="text-end">
+                                        <form method="post" action="{{ path('app_admin_parking_spot_assignment_delete', {assignment: assignment.id}) }}" onsubmit="return confirm('Usunąć przypisanie?');">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete-assignment-' ~ assignment.id) }}">
+                                            <button class="btn btn-outline-danger btn-sm" type="submit">Usuń</button>
+                                        </form>
                                     </td>
                                 </tr>
                             {% endfor %}
