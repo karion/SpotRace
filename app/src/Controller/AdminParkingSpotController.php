@@ -113,6 +113,12 @@ class AdminParkingSpotController extends AbstractController
                 }
             }
 
+            if ($this->assignments->hasOverlappingAssignmentForSpot($parkingSpot->getId(), $startsAt, $endsAt)) {
+                $this->addFlash('error', 'To miejsce ma już przypisanie w podanym zakresie dat.');
+
+                return $this->redirectToRoute('app_admin_parking_spot_assign', ['id' => $parkingSpot->getId()]);
+            }
+
             /** @var User $currentUser */
             $currentUser = $this->getUser();
             $assignment = (new ParkingSpotAssignment())
@@ -135,6 +141,23 @@ class AdminParkingSpotController extends AbstractController
             'users' => $this->users->findBy([], ['name' => 'ASC']),
             'assignments' => $this->assignments->findByParkingSpot($parkingSpot->getId()),
         ]);
+    }
+
+    #[Route('/assignment/{assignment}/delete', name: 'app_admin_parking_spot_assignment_delete', methods: ['POST'])]
+    public function deleteAssignment(Request $request, ParkingSpotAssignment $assignment): Response
+    {
+        $parkingSpot = $assignment->getParkingSpot();
+
+        if (!$this->isCsrfTokenValid('delete-assignment-'.$assignment->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Nieprawidłowy token CSRF.');
+        }
+
+        $this->entityManager->remove($assignment);
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'Przypisanie miejsca zostało usunięte.');
+
+        return $this->redirectToRoute('app_admin_parking_spot_assign', ['id' => $parkingSpot->getId()]);
     }
 
     #[Route('/{id}/delete', name: 'app_admin_parking_spot_delete', methods: ['POST'])]
