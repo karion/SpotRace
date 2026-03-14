@@ -9,9 +9,7 @@
    - potwierdzić swoje miejsce (dla dziś i do 7 dni w przód),
    - przekazać swoje miejsce innej osobie (dla dziś i do 7 dni w przód).
 3. Dla dnia bieżącego przypisane miejsce jest zablokowane dla innych użytkowników do godziny 07:00.
-4. Zwykły użytkownik może rezerwować tylko wolne miejsca na:
-   - dziś,
-   - jutro.
+4. Zwykły użytkownik może rezerwować wolne miejsca na dowolny dzień (od dnia bieżącego).
 5. Jedna osoba może mieć maksymalnie jedną rezerwację dziennie.
 6. Nie można zarezerwować miejsca już zarezerwowanego.
 7. Admin rezerwuje miejsca tak samo jak użytkownik.

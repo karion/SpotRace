@@ -25,7 +25,7 @@
                             <div class="d-flex justify-content-between gap-3 align-items-center flex-wrap mb-3">
                                 <p class="mb-0"><strong>{{ day.assignment.parkingSpot.name }}</strong> ({{ day.assignment.parkingSpot.description }})</p>
 
-                                {% if day.canConfirmAssigned %}
+                                {% if day.canManageAssigned %}
                                     <div class="d-flex gap-2 align-items-center flex-wrap">
                                         <form method="post" action="{{ path('app_reservation_confirm_assigned') }}">
                                             <input type="hidden" name="_token" value="{{ csrf_token('confirm-assigned-' ~ day.date|date('Y-m-d')) }}">
@@ -35,7 +35,27 @@
 
                                         <a class="btn btn-outline-light btn-sm" href="{{ path('app_reservation_delegate_assigned', { date: day.date|date('Y-m-d') }) }}">Przekaż</a>
                                     </div>
+                                {% elseif day.assignedSpotReserved %}
+                                    <span class="badge text-bg-success">Miejsce już potwierdzone</span>
                                 {% endif %}
+                            </div>
+                        {% endif %}
+
+                        {% if day.userReservation %}
+                            <div class="alert alert-info py-2 px-3 mb-3">
+                                <div class="d-flex gap-2 justify-content-between align-items-center flex-wrap">
+                                    <span>
+                                        Masz już rezerwację: <strong>{{ day.userReservation.parkingSpot.name }}</strong>
+                                        ({{ day.userReservation.parkingSpot.description }}).
+                                    </span>
+                                    {% if day.canReleaseReservation %}
+                                        <form method="post" action="{{ path('app_reservation_release') }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('release-reservation-' ~ day.date|date('Y-m-d')) }}">
+                                            <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
+                                            <button class="btn btn-warning btn-sm" type="submit">Zwolnij miejsce</button>
+                                        </form>
+                                    {% endif %}
+                                </div>
                             </div>
                         {% endif %}
 
@@ -57,12 +77,16 @@
                                                 <td>{{ spot.name }}</td>
                                                 <td>{{ spot.description }}</td>
                                                 <td>
-                                                    <form method="post" action="{{ path('app_reservation_free') }}">
-                                                        <input type="hidden" name="_token" value="{{ csrf_token('reserve-free-' ~ day.date|date('Y-m-d')) }}">
-                                                        <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
-                                                        <input type="hidden" name="spot_id" value="{{ spot.id }}">
-                                                        <button class="btn btn-primary btn-sm" type="submit">Rezerwuj</button>
-                                                    </form>
+                                                    {% if day.canReserveFree %}
+                                                        <form method="post" action="{{ path('app_reservation_free') }}">
+                                                            <input type="hidden" name="_token" value="{{ csrf_token('reserve-free-' ~ day.date|date('Y-m-d')) }}">
+                                                            <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
+                                                            <input type="hidden" name="spot_id" value="{{ spot.id }}">
+                                                            <button class="btn btn-primary btn-sm" type="submit">Rezerwuj</button>
+                                                        </form>
+                                                    {% else %}
+                                                        <button class="btn btn-secondary btn-sm" type="button" disabled>Masz już rezerwację</button>
+                                                    {% endif %}
                                                 </td>
                                             </tr>
                                         {% endfor %}

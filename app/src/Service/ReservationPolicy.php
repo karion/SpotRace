@@ -68,6 +68,17 @@ class ReservationPolicy
         return $this->now() < $this->confirmationCutoff($today);
     }
 
+
+    public function canReleaseReservation(\DateTimeImmutable $date): bool
+    {
+        $today = $this->today();
+        if ($date != $today) {
+            return false;
+        }
+
+        return $this->now() < $this->confirmationCutoff($today);
+    }
+
     public function isAssignmentLockedForOthers(\DateTimeImmutable $date): bool
     {
         $today = $this->today();
