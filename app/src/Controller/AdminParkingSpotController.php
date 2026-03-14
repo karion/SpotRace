@@ -160,6 +160,73 @@ class AdminParkingSpotController extends AbstractController
         return $this->redirectToRoute('app_admin_parking_spot_assign', ['id' => $parkingSpot->getId()]);
     }
 
+    #[Route('/assignment/{assignment}/edit', name: 'app_admin_parking_spot_assignment_edit', methods: ['GET', 'POST'])]
+    public function editAssignment(Request $request, ParkingSpotAssignment $assignment): Response
+    {
+        $parkingSpot = $assignment->getParkingSpot();
+
+        if ('POST' === $request->getMethod()) {
+            if (!$this->isCsrfTokenValid('edit-assignment-'.$assignment->getId(), (string) $request->request->get('_token'))) {
+                throw $this->createAccessDeniedException('Nieprawidłowy token CSRF.');
+            }
+
+            $assignedUser = $this->users->find((string) $request->request->get('assigned_user_id'));
+            if (!$assignedUser instanceof User) {
+                $this->addFlash('error', 'Nie znaleziono użytkownika do przypisania.');
+
+                return $this->redirectToRoute('app_admin_parking_spot_assignment_edit', ['assignment' => $assignment->getId()]);
+            }
+
+            $startsAt = \DateTimeImmutable::createFromFormat('Y-m-d', (string) $request->request->get('starts_at'));
+            if (!$startsAt) {
+                $this->addFlash('error', 'Nieprawidłowa data początku przypisania.');
+
+                return $this->redirectToRoute('app_admin_parking_spot_assignment_edit', ['assignment' => $assignment->getId()]);
+            }
+
+            $endsAtRaw = trim((string) $request->request->get('ends_at', ''));
+            $endsAt = null;
+            if ('' !== $endsAtRaw) {
+                $endsAt = \DateTimeImmutable::createFromFormat('Y-m-d', $endsAtRaw);
+                if (!$endsAt) {
+                    $this->addFlash('error', 'Nieprawidłowa data zakończenia przypisania.');
+
+                    return $this->redirectToRoute('app_admin_parking_spot_assignment_edit', ['assignment' => $assignment->getId()]);
+                }
+
+                if ($endsAt < $startsAt) {
+                    $this->addFlash('error', 'Data zakończenia nie może być wcześniejsza niż data początku.');
+
+                    return $this->redirectToRoute('app_admin_parking_spot_assignment_edit', ['assignment' => $assignment->getId()]);
+                }
+            }
+
+            if ($this->assignments->hasOverlappingAssignmentForSpot($parkingSpot->getId(), $startsAt, $endsAt, $assignment->getId())) {
+                $this->addFlash('error', 'To miejsce ma już przypisanie w podanym zakresie dat.');
+
+                return $this->redirectToRoute('app_admin_parking_spot_assignment_edit', ['assignment' => $assignment->getId()]);
+            }
+
+            $assignment
+                ->setAssignedUser($assignedUser)
+                ->setStartsAt($startsAt)
+                ->setEndsAt($endsAt);
+
+            $this->entityManager->flush();
+
+            $this->addFlash('success', 'Przypisanie miejsca zostało zaktualizowane.');
+
+            return $this->redirectToRoute('app_admin_parking_spot_assign', ['id' => $parkingSpot->getId()]);
+        }
+
+        return $this->render('admin/parking_spot/assign.html.twig', [
+            'spot' => $parkingSpot,
+            'users' => $this->users->findBy([], ['name' => 'ASC']),
+            'assignments' => $this->assignments->findByParkingSpot($parkingSpot->getId()),
+            'editingAssignment' => $assignment,
+        ]);
+    }
+
     #[Route('/{id}/delete', name: 'app_admin_parking_spot_delete', methods: ['POST'])]
     public function delete(ParkingSpot $parkingSpot): Response
     {
