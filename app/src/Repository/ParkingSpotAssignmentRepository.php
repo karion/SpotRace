@@ -59,6 +59,11 @@ class ParkingSpotAssignmentRepository extends ServiceEntityRepository
         ?\DateTimeImmutable $endsAt,
         ?string $excludedAssignmentId = null,
     ): bool {
+        $newStart = $startsAt->setTime(0, 0, 0);
+        $newEnd = (null !== $endsAt)
+            ? $endsAt->setTime(23, 59, 59)
+            : new \DateTimeImmutable('9999-12-31 23:59:59');
+
         $qb = $this->createQueryBuilder('a')
             ->select('COUNT(a.id)')
             ->join('a.parkingSpot', 's')
@@ -66,8 +71,8 @@ class ParkingSpotAssignmentRepository extends ServiceEntityRepository
             ->andWhere('a.startsAt <= :newEnd')
             ->andWhere('a.endsAt IS NULL OR a.endsAt >= :newStart')
             ->setParameter('spotId', $spotId)
-            ->setParameter('newStart', $startsAt)
-            ->setParameter('newEnd', $endsAt ?? new \DateTimeImmutable('9999-12-31'));
+            ->setParameter('newStart', $newStart)
+            ->setParameter('newEnd', $newEnd);
 
         if (null !== $excludedAssignmentId) {
             $qb
