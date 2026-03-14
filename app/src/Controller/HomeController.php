@@ -135,12 +135,6 @@ class HomeController extends AbstractController
         $date = $this->mustParseDate((string) $request->request->get('date'));
         $this->validateCsrf($request, 'reserve-free-'.$date->format('Y-m-d'));
 
-        if (!$this->policy->isWithinFreeWindow($date)) {
-            $this->addFlash('error', 'Możesz rezerwować wolne miejsca tylko na dzisiaj i jutro.');
-
-            return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
-        }
-
         if (!$this->ensureUserHasNoReservation($user, $date)) {
             $this->addFlash('error', 'Masz już rezerwację w tym dniu.');
 
