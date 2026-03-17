@@ -342,7 +342,7 @@ class HomeController extends AbstractController
 
     private function mustParseDate(string $date): \DateTimeImmutable
     {
-        $parsed = \DateTimeImmutable::createFromFormat('Y-m-d', $date);
+        $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date);
         if (!$parsed) {
             throw $this->createNotFoundException('Nieprawidłowa data.');
         }
