@@ -72,8 +72,7 @@ class AdminUserServiceTest extends TestCase
     public function testBlockThrowsWhenManagingOwnAccount(): void
     {
         $managedUser = $this->createUser();
-        $currentUser = $this->createUser();
-        $this->setUserId($currentUser, $managedUser->getId());
+        $currentUser = $managedUser;
 
         $this->entityManager->expects(self::never())->method('flush');
 
@@ -81,6 +80,17 @@ class AdminUserServiceTest extends TestCase
         $this->expectExceptionMessage('Nie możesz zmieniać statusu własnego konta.');
 
         $this->service->block($managedUser, $currentUser);
+    }
+
+
+    public function testUserIdIsGeneratedInPhpConstructor(): void
+    {
+        $user = $this->createUser();
+
+        self::assertMatchesRegularExpression(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i',
+            $user->getId(),
+        );
     }
 
     private function createUser(): User
@@ -91,10 +101,4 @@ class AdminUserServiceTest extends TestCase
             ->setPasswordHash('hash');
     }
 
-    private function setUserId(User $user, string $id): void
-    {
-        $reflection = new \ReflectionProperty(User::class, 'id');
-        $reflection->setAccessible(true);
-        $reflection->setValue($user, $id);
-    }
 }
