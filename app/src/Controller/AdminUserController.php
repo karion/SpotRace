@@ -4,7 +4,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\AdminUserService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,7 +16,7 @@ class AdminUserController extends AbstractController
 {
     public function __construct(
         private readonly UserRepository $users,
-        private readonly EntityManagerInterface $entityManager,
+        private readonly AdminUserService $adminUserService,
     ) {
     }
 
@@ -31,15 +31,8 @@ class AdminUserController extends AbstractController
     #[Route('/{id}/block', name: 'app_admin_user_block', methods: ['POST'])]
     public function block(Request $request, User $user): RedirectResponse
     {
-        $this->denySelfAction($user);
-
         $this->validateCsrf($request, $user);
-
-        $user
-            ->block()
-            ->setPasswordResetToken(null)
-            ->setPasswordResetExpiresAt(null);
-        $this->entityManager->flush();
+        $this->adminUserService->block($user, $this->getUser());
 
         $this->addFlash('success', sprintf('Użytkownik %s został zablokowany.', $user->getEmail()));
 
@@ -49,16 +42,8 @@ class AdminUserController extends AbstractController
     #[Route('/{id}/force-password-reset', name: 'app_admin_user_force_password_reset', methods: ['POST'])]
     public function forcePasswordReset(Request $request, User $user): RedirectResponse
     {
-        $this->denySelfAction($user);
-
         $this->validateCsrf($request, $user);
-
-        $user
-            ->requirePasswordReset()
-            ->setPasswordResetToken(null)
-            ->setPasswordResetExpiresAt(null);
-
-        $this->entityManager->flush();
+        $this->adminUserService->forcePasswordReset($user, $this->getUser());
 
         $this->addFlash('success', sprintf('Wymuszono reset hasła dla użytkownika %s.', $user->getEmail()));
 
@@ -68,36 +53,19 @@ class AdminUserController extends AbstractController
     #[Route('/{id}/unlock', name: 'app_admin_user_unlock', methods: ['POST'])]
     public function unlock(Request $request, User $user): RedirectResponse
     {
-        $this->denySelfAction($user);
-
         $this->validateCsrf($request, $user);
-
-        $user
-            ->requirePasswordReset()
-            ->setPasswordResetToken(null)
-            ->setPasswordResetExpiresAt(null);
-
-        $this->entityManager->flush();
+        $this->adminUserService->unlock($user, $this->getUser());
 
         $this->addFlash('success', sprintf('Użytkownik %s został odblokowany i musi zresetować hasło.', $user->getEmail()));
 
         return $this->redirectToRoute('app_admin_user_index');
     }
 
-
     private function validateCsrf(Request $request, User $managedUser): void
     {
         $token = (string) $request->request->get('_token', '');
         if (!$this->isCsrfTokenValid('admin-user-'.$managedUser->getId(), $token)) {
             throw $this->createAccessDeniedException('Nieprawidłowy token CSRF.');
-        }
-    }
-
-    private function denySelfAction(User $managedUser): void
-    {
-        $current = $this->getUser();
-        if ($current instanceof User && $current->getId() === $managedUser->getId()) {
-            throw $this->createAccessDeniedException('Nie możesz zmieniać statusu własnego konta.');
         }
     }
 }
