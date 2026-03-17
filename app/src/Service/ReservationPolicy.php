@@ -27,6 +27,11 @@ class ReservationPolicy
         return $date->setTime($this->confirmationDeadlineHour, 0);
     }
 
+    public function formattedConfirmationDeadline(): string
+    {
+        return sprintf('%02d:00', $this->confirmationDeadlineHour);
+    }
+
     public function assignedWindowDays(): int
     {
         return $this->assignedWindowDays;
@@ -72,11 +77,11 @@ class ReservationPolicy
     public function canReleaseReservation(\DateTimeImmutable $date): bool
     {
         $today = $this->today();
-        if ($date != $today) {
+        if ($date < $today) {
             return false;
         }
 
-        return $this->now() < $this->confirmationCutoff($today);
+        return $this->now() < $this->confirmationCutoff($date);
     }
 
     public function isAssignmentLockedForOthers(\DateTimeImmutable $date): bool

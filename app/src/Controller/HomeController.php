@@ -315,7 +315,7 @@ class HomeController extends AbstractController
         $this->validateCsrf($request, 'release-reservation-'.$date->format('Y-m-d'));
 
         if (!$this->policy->canReleaseReservation($date)) {
-            $this->addFlash('error', 'Zwolnienie miejsca jest możliwe tylko dziś przed 07:00.');
+            $this->addFlash('error', sprintf('Zwolnienie miejsca jest możliwe do %s wybranego dnia.', $this->policy->formattedConfirmationDeadline()));
 
             return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
         }
