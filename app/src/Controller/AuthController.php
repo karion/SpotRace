@@ -171,7 +171,6 @@ class AuthController extends AbstractController
         throw new \LogicException('This method can be blank - it will be intercepted by the logout key on your firewall.');
     }
 
-
     private function sendEmailVerificationMessage(User $user, string $verifyLink): void
     {
         $message = (new Email())

@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 class AdminUserService
 {
@@ -13,7 +14,7 @@ class AdminUserService
     ) {
     }
 
-    public function block(User $managedUser, ?User $currentUser): void
+    public function block(User $managedUser, ?UserInterface $currentUser): void
     {
         $this->denySelfAction($managedUser, $currentUser);
 
@@ -25,7 +26,7 @@ class AdminUserService
         $this->entityManager->flush();
     }
 
-    public function forcePasswordReset(User $managedUser, ?User $currentUser): void
+    public function forcePasswordReset(User $managedUser, ?UserInterface $currentUser): void
     {
         $this->denySelfAction($managedUser, $currentUser);
 
@@ -37,7 +38,7 @@ class AdminUserService
         $this->entityManager->flush();
     }
 
-    public function unlock(User $managedUser, ?User $currentUser): void
+    public function unlock(User $managedUser, ?UserInterface $currentUser): void
     {
         $this->denySelfAction($managedUser, $currentUser);
 
@@ -49,7 +50,7 @@ class AdminUserService
         $this->entityManager->flush();
     }
 
-    private function denySelfAction(User $managedUser, ?User $currentUser): void
+    private function denySelfAction(User $managedUser, ?UserInterface $currentUser): void
     {
         if ($currentUser instanceof User && $currentUser->getId() === $managedUser->getId()) {
             throw new AccessDeniedHttpException('Nie możesz zmieniać statusu własnego konta.');

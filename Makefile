@@ -61,3 +61,6 @@ sf:
 
 migrate:
 	$(DC) exec $(SERVICE_APP) php bin/console doctrine:migrations:migrate --no-interaction
+
+phpstan:
+	$(DC) exec $(SERVICE_APP) php vendor/bin/phpstan --memory-limit=-1

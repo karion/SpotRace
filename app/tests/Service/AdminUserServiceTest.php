@@ -99,5 +99,4 @@ class AdminUserServiceTest extends TestCase
             ->setName('User')
             ->setPasswordHash('hash');
     }
-
 }

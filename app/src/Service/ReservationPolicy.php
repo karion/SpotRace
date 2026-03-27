@@ -58,7 +58,6 @@ class ReservationPolicy
         return $date >= $today && $date <= $max;
     }
 
-
     public function canManageAssignedSpot(\DateTimeImmutable $date): bool
     {
         if (!$this->isWithinAssignedWindow($date)) {
@@ -72,7 +71,6 @@ class ReservationPolicy
 
         return $this->now() < $this->confirmationCutoff($today);
     }
-
 
     public function canReleaseReservation(\DateTimeImmutable $date): bool
     {
