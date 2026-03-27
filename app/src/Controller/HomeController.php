@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\ParkingReservation;
+use App\Entity\ParkingSpotAssignment;
 use App\Entity\User;
 use App\Repository\ParkingReservationRepository;
 use App\Repository\ParkingSpotAssignmentRepository;
@@ -38,23 +39,51 @@ class HomeController extends AbstractController
 
         $days = [];
         $today = $this->policy->today();
+        $rangeEnd = $today->modify(sprintf('+%d days', $this->policy->assignedWindowDays()));
+
+        $userAssignmentsByDate = [];
+        if ($user instanceof User) {
+            foreach ($this->assignments->findUserAssignmentsInRange($user, $today, $rangeEnd) as $assignment) {
+                foreach ($this->expandAssignmentDates($assignment, $today, $rangeEnd) as $dateKey) {
+                    $userAssignmentsByDate[$dateKey] = $assignment;
+                }
+            }
+        }
+
+        $reservationsByDate = [];
+        $userReservationsByDate = [];
+        foreach ($this->reservations->findByDateRange($today, $rangeEnd) as $reservation) {
+            $dateKey = $reservation->getReservationDate()->format('Y-m-d');
+            $reservationsByDate[$dateKey][] = $reservation;
+
+            if ($user instanceof User && $reservation->getReservedForUser()->getId() === $user->getId()) {
+                $userReservationsByDate[$dateKey] = $reservation;
+            }
+        }
+
+        $activeAssignmentsByDate = [];
+        foreach ($this->assignments->findActiveInRange($today, $rangeEnd) as $activeAssignment) {
+            foreach ($this->expandAssignmentDates($activeAssignment, $today, $rangeEnd) as $dateKey) {
+                $activeAssignmentsByDate[$dateKey][] = $activeAssignment;
+            }
+        }
+
         for ($offset = 0; $offset <= $this->policy->assignedWindowDays(); ++$offset) {
             $date = $today->modify(sprintf('+%d days', $offset));
             $isWithinFreeWindow = $offset <= $this->policy->freeReservationWindowDays();
+            $dateKey = $date->format('Y-m-d');
 
-            $assignment = null;
-            if ($user instanceof User) {
-                $assignment = $this->assignments->findUserAssignmentForDate($user, $date);
-            }
-
-            $userReservation = null;
-            if ($user instanceof User) {
-                $userReservation = $this->reservations->findUserReservationForDate($user, $date);
-            }
+            $assignment = $userAssignmentsByDate[$dateKey] ?? null;
+            $userReservation = $userReservationsByDate[$dateKey] ?? null;
 
             $assignedSpotReserved = false;
             if ($assignment) {
-                $assignedSpotReserved = null !== $this->reservations->findSpotReservationForDate($assignment->getParkingSpot()->getId(), $date);
+                foreach ($reservationsByDate[$dateKey] ?? [] as $reservation) {
+                    if ($reservation->getParkingSpot()->getId() === $assignment->getParkingSpot()->getId()) {
+                        $assignedSpotReserved = true;
+                        break;
+                    }
+                }
             }
 
             if (!$isWithinFreeWindow && !$assignment && !$userReservation) {
@@ -63,15 +92,13 @@ class HomeController extends AbstractController
 
             $availableSpots = [];
             if ($isWithinFreeWindow) {
-                $reserved = $this->reservations->findByDate($date);
                 $takenSpotIds = [];
-                foreach ($reserved as $reservation) {
+                foreach ($reservationsByDate[$dateKey] ?? [] as $reservation) {
                     $takenSpotIds[$reservation->getParkingSpot()->getId()] = true;
                 }
 
-                $activeAssignments = $this->assignments->findActiveForDate($date);
                 $lockedSpotIds = [];
-                foreach ($activeAssignments as $activeAssignment) {
+                foreach ($activeAssignmentsByDate[$dateKey] ?? [] as $activeAssignment) {
                     $spotId = $activeAssignment->getParkingSpot()->getId();
                     if ($this->policy->isAssignmentLockedForOthers($date) && (!$assignment || $assignment->getParkingSpot()->getId() !== $spotId)) {
                         $lockedSpotIds[$spotId] = true;
@@ -104,6 +131,21 @@ class HomeController extends AbstractController
             'user' => $user,
             'days' => $days,
         ]);
+    }
+
+    /** @return array<int, string> */
+    private function expandAssignmentDates(ParkingSpotAssignment $assignment, \DateTimeImmutable $rangeStart, \DateTimeImmutable $rangeEnd): array
+    {
+        $date = $assignment->getStartsAt() > $rangeStart ? $assignment->getStartsAt() : $rangeStart;
+        $endDate = $assignment->getEndsAt() && $assignment->getEndsAt() < $rangeEnd ? $assignment->getEndsAt() : $rangeEnd;
+
+        $dates = [];
+        while ($date <= $endDate) {
+            $dates[] = $date->format('Y-m-d');
+            $date = $date->modify('+1 day');
+        }
+
+        return $dates;
     }
 
     #[Route('/reservations/delegate-assigned', name: 'app_reservation_delegate_assigned', methods: ['GET'])]

@@ -31,6 +31,8 @@ class ParkingSpotAssignmentRepository extends ServiceEntityRepository
     public function findUserAssignmentForDate(User $user, \DateTimeImmutable $date): ?ParkingSpotAssignment
     {
         return $this->createQueryBuilder('a')
+            ->addSelect('s')
+            ->join('a.parkingSpot', 's')
             ->andWhere('a.assignedUser = :user')
             ->andWhere('a.startsAt <= :date')
             ->andWhere('a.endsAt IS NULL OR a.endsAt >= :date')
@@ -39,6 +41,36 @@ class ParkingSpotAssignmentRepository extends ServiceEntityRepository
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /** @return array<int, ParkingSpotAssignment> */
+    public function findUserAssignmentsInRange(User $user, \DateTimeImmutable $startsAt, \DateTimeImmutable $endsAt): array
+    {
+        return $this->createQueryBuilder('a')
+            ->addSelect('s')
+            ->join('a.parkingSpot', 's')
+            ->andWhere('a.assignedUser = :user')
+            ->andWhere('a.startsAt <= :endsAt')
+            ->andWhere('a.endsAt IS NULL OR a.endsAt >= :startsAt')
+            ->setParameter('user', $user)
+            ->setParameter('startsAt', $startsAt)
+            ->setParameter('endsAt', $endsAt)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return array<int, ParkingSpotAssignment> */
+    public function findActiveInRange(\DateTimeImmutable $startsAt, \DateTimeImmutable $endsAt): array
+    {
+        return $this->createQueryBuilder('a')
+            ->addSelect('s')
+            ->join('a.parkingSpot', 's')
+            ->andWhere('a.startsAt <= :endsAt')
+            ->andWhere('a.endsAt IS NULL OR a.endsAt >= :startsAt')
+            ->setParameter('startsAt', $startsAt)
+            ->setParameter('endsAt', $endsAt)
+            ->getQuery()
+            ->getResult();
     }
 
     /** @return array<int, ParkingSpotAssignment> */
