@@ -27,7 +27,10 @@
         <div class="container content-wrap py-4">
             {% for label, messages in app.flashes %}
                 {% for message in messages %}
-                    <div class="alert {{ label == 'error' ? 'alert-danger' : 'alert-success' }}" role="alert">{{ message }}</div>
+                    <div class="alert
+                        {{ label == 'error' ? 'alert-danger' : '' }}
+                        {{ label == 'warning' ? 'alert-warning' : '' }}
+                        {{ label == 'success' ? 'alert-success' : '' }}" role="alert">{{ message }}</div>
                 {% endfor %}
             {% endfor %}
 

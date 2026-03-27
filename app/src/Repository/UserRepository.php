@@ -30,4 +30,23 @@ class UserRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['passwordResetToken' => $token]);
     }
+
+    public function hasActiveAdmin(): bool
+    {
+        $sql = <<<'SQL'
+            SELECT EXISTS(
+                SELECT 1
+                FROM `user`
+                WHERE status = :status
+                  AND JSON_CONTAINS(roles, :adminRole) = 1
+            )
+        SQL;
+
+        return (bool) $this->getEntityManager()
+            ->getConnection()
+            ->fetchOne($sql, [
+                'status' => User::STATUS_ACTIVE,
+                'adminRole' => '"ROLE_ADMIN"',
+            ]);
+    }
 }

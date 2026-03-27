@@ -82,7 +82,6 @@ class AdminUserServiceTest extends TestCase
         $this->service->block($managedUser, $currentUser);
     }
 
-
     public function testUserIdIsGeneratedInPhpConstructor(): void
     {
         $user = $this->createUser();

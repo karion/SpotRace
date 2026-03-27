@@ -32,6 +32,8 @@ System pozwala na:
 - Odblokowanie konta (z jednoczesnym wymuszeniem resetu hasła).
 - Zabezpieczenie przed samodzielną zmianą statusu własnego konta admina.
 - Nadanie roli admin przez komendę CLI.
+- Odebranie roli admin przez komendę CLI.
+- Ostrzeżenie w CLI, jeśli po odebraniu uprawnień nie ma aktywnego administratora.
 
 ### 2.3. Zarządzanie miejscami postojowymi (admin)
 
@@ -150,6 +152,8 @@ Dodatkowo:
 
 - nadanie roli administratora:
   - `php app/bin/console app:user:promote-admin user@example.com`.
+- odebranie roli administratora:
+  - `php app/bin/console app:user:demote-admin user@example.com`.
 
 ## 8. Jakość i testy
 

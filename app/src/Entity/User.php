@@ -140,6 +140,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function demoteFromAdmin(): self
+    {
+        $this->setRoles(array_values(array_filter(
+            $this->getRoles(),
+            static fn (string $role): bool => 'ROLE_ADMIN' !== $role,
+        )));
+
+        return $this;
+    }
+
     public function getStatus(): string
     {
         return $this->status;

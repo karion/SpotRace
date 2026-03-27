@@ -58,6 +58,12 @@ make migrate
 php app/bin/console app:user:promote-admin user@example.com
 ```
 
+### Odebranie roli admin po emailu
+
+```bash
+php app/bin/console app:user:demote-admin user@example.com
+```
+
 ## Mailer (dev)
 
 - Transport SMTP: `MAILER_DSN=smtp://mailhog:1025`
