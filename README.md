@@ -37,6 +37,11 @@ make sf CMD='about'
 make migrate
 ```
 
+## Dokumentacja
+
+- Dokumentacja systemowa: `docs/dokumentacja-systemu.md`.
+- Przypadki użycia rezerwacji: `docs/rezerwacje-miejsc.md`.
+
 ## System logowania i rejestracji
 
 - Role: `ROLE_USER` (domyślnie), `ROLE_ADMIN`
