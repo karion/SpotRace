@@ -36,10 +36,11 @@ class HomeController extends AbstractController
         $user = $this->getUser();
         $allSpots = $this->parkingSpots->findBy([], ['name' => 'ASC']);
 
-        $freeDays = [];
+        $days = [];
         $today = $this->policy->today();
-        for ($offset = 0; $offset <= $this->policy->freeReservationWindowDays(); ++$offset) {
+        for ($offset = 0; $offset <= $this->policy->assignedWindowDays(); ++$offset) {
             $date = $today->modify(sprintf('+%d days', $offset));
+            $isWithinFreeWindow = $offset <= $this->policy->freeReservationWindowDays();
 
             $assignment = null;
             if ($user instanceof User) {
@@ -56,37 +57,44 @@ class HomeController extends AbstractController
                 $assignedSpotReserved = null !== $this->reservations->findSpotReservationForDate($assignment->getParkingSpot()->getId(), $date);
             }
 
-            $reserved = $this->reservations->findByDate($date);
-            $takenSpotIds = [];
-            foreach ($reserved as $reservation) {
-                $takenSpotIds[$reservation->getParkingSpot()->getId()] = true;
-            }
-
-            $activeAssignments = $this->assignments->findActiveForDate($date);
-            $lockedSpotIds = [];
-            foreach ($activeAssignments as $activeAssignment) {
-                $spotId = $activeAssignment->getParkingSpot()->getId();
-                if ($this->policy->isAssignmentLockedForOthers($date) && (!$assignment || $assignment->getParkingSpot()->getId() !== $spotId)) {
-                    $lockedSpotIds[$spotId] = true;
-                }
+            if (!$isWithinFreeWindow && !$assignment && !$userReservation) {
+                continue;
             }
 
             $availableSpots = [];
-            foreach ($allSpots as $spot) {
-                if (isset($takenSpotIds[$spot->getId()]) || isset($lockedSpotIds[$spot->getId()])) {
-                    continue;
+            if ($isWithinFreeWindow) {
+                $reserved = $this->reservations->findByDate($date);
+                $takenSpotIds = [];
+                foreach ($reserved as $reservation) {
+                    $takenSpotIds[$reservation->getParkingSpot()->getId()] = true;
                 }
-                $availableSpots[] = $spot;
+
+                $activeAssignments = $this->assignments->findActiveForDate($date);
+                $lockedSpotIds = [];
+                foreach ($activeAssignments as $activeAssignment) {
+                    $spotId = $activeAssignment->getParkingSpot()->getId();
+                    if ($this->policy->isAssignmentLockedForOthers($date) && (!$assignment || $assignment->getParkingSpot()->getId() !== $spotId)) {
+                        $lockedSpotIds[$spotId] = true;
+                    }
+                }
+
+                foreach ($allSpots as $spot) {
+                    if (isset($takenSpotIds[$spot->getId()]) || isset($lockedSpotIds[$spot->getId()])) {
+                        continue;
+                    }
+                    $availableSpots[] = $spot;
+                }
             }
 
-            $freeDays[] = [
+            $days[] = [
                 'date' => $date,
                 'displayDate' => $this->formatPolishShortDate($date),
+                'isWithinFreeWindow' => $isWithinFreeWindow,
                 'assignment' => $assignment,
                 'userReservation' => $userReservation,
                 'canManageAssigned' => $assignment && $this->policy->canManageAssignedSpot($date) && !$assignedSpotReserved && !$userReservation,
                 'assignedSpotReserved' => $assignedSpotReserved,
-                'canReserveFree' => !$userReservation,
+                'canReserveFree' => $isWithinFreeWindow && !$userReservation,
                 'canReleaseReservation' => $userReservation && $this->policy->canReleaseReservation($date),
                 'availableSpots' => $availableSpots,
             ];
@@ -94,7 +102,7 @@ class HomeController extends AbstractController
 
         return $this->render('home/index.html.twig', [
             'user' => $user,
-            'freeDays' => $freeDays,
+            'days' => $days,
         ]);
     }
 

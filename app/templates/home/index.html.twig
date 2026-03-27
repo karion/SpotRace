@@ -14,9 +14,9 @@
                 </div>
             {% endif %}
 
-            <h2 class="h4 mb-3">Dostępne miejsca (podział na dni)</h2>
+            <h2 class="h4 mb-3">Rezerwacje i przypisane miejsca (podział na dni)</h2>
             <div class="vstack gap-4">
-                {% for day in freeDays %}
+                {% for day in days %}
                     <section class="border border-secondary-subtle rounded p-3">
                         <h3 class="h5">{{ day.displayDate }}</h3>
 
@@ -59,9 +59,9 @@
                             </div>
                         {% endif %}
 
-                        {% if day.availableSpots is empty %}
+                        {% if day.isWithinFreeWindow and day.availableSpots is empty %}
                             <p class="mb-0">Brak wolnych miejsc.</p>
-                        {% else %}
+                        {% elseif day.isWithinFreeWindow %}
                             <div class="table-responsive">
                                 <table class="table table-dark table-hover align-middle mb-0">
                                     <thead>
