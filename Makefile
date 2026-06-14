@@ -4,7 +4,7 @@ DC := docker compose
 SERVICE_APP := frankenphp
 SERVICE_DB := mysql
 
-.PHONY: help up down restart build ps logs app-shell db-shell composer-install composer-update composer-require sf migrate
+.PHONY: help up down restart build ps logs app-shell db-shell composer-install composer-update composer-require sf migrate phpunit phpstan php-cs-fixer php-cs-fixer-check
 
 help:
 	@echo "Available targets:"
@@ -21,6 +21,10 @@ help:
 	@echo "  make composer-require PACKAGE=vendor/package - Require package"
 	@echo "  make sf CMD='about'   - Run Symfony console command"
 	@echo "  make migrate          - Run doctrine migrations"
+	@echo "  make phpunit          - Run PHPUnit tests"
+	@echo "  make phpstan          - Run PHPStan analysis"
+	@echo "  make php-cs-fixer     - Fix PHP coding style"
+	@echo "  make php-cs-fixer-check - Check PHP coding style"
 
 up:
 	$(DC) up -d
@@ -62,5 +66,14 @@ sf:
 migrate:
 	$(DC) exec $(SERVICE_APP) php bin/console doctrine:migrations:migrate --no-interaction
 
+phpunit:
+	$(DC) exec $(SERVICE_APP) php bin/phpunit
+
 phpstan:
 	$(DC) exec $(SERVICE_APP) php vendor/bin/phpstan --memory-limit=-1
+
+php-cs-fixer:
+	$(DC) exec $(SERVICE_APP) php vendor/bin/php-cs-fixer fix --diff
+
+php-cs-fixer-check:
+	$(DC) exec $(SERVICE_APP) php vendor/bin/php-cs-fixer fix --dry-run --diff

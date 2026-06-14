@@ -1,0 +1,4 @@
+interface:
+  display_name: "Weryfikacja zmian SpotRace"
+  short_description: "Uruchamiaj pełny zestaw kontroli jakości"
+  default_prompt: "Użyj $verify-spotrace-change, aby sprawdzić bieżące zmiany w SpotRace."
