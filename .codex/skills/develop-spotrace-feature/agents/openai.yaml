@@ -1,0 +1,4 @@
+interface:
+  display_name: "Rozwój funkcji SpotRace"
+  short_description: "Implementuj kompletne funkcje zgodnie z architekturą"
+  default_prompt: "Użyj $develop-spotrace-feature, aby zaimplementować nową funkcję w SpotRace."

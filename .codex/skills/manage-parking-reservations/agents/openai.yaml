@@ -1,0 +1,4 @@
+interface:
+  display_name: "Zarządzanie rezerwacjami SpotRace"
+  short_description: "Rozwijaj bezpiecznie logikę rezerwacji miejsc"
+  default_prompt: "Użyj $manage-parking-reservations, aby zmienić reguły rezerwacji miejsc w SpotRace."
