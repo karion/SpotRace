@@ -1,6 +1,6 @@
-# SpotRace (Symfony 6.4 LTS)
+# SpotRace (Symfony 7.4)
 
-Aplikacja Symfony 6.4 LTS z frontem w Twig i bazą MySQL.
+Aplikacja Symfony 7.4 z frontem w Twig i bazą MySQL.
 Kod aplikacji znajduje się w katalogu `app/`.
 
 ## Wymagania lokalne
@@ -41,16 +41,18 @@ make migrate
 
 - Dokumentacja systemowa: `docs/dokumentacja-systemu.md`.
 - Przypadki użycia rezerwacji: `docs/rezerwacje-miejsc.md`.
+- Firmy i pule miejsc postojowych: `docs/firmy.md`.
 
 ## System logowania i rejestracji
 
-- Role: `ROLE_USER` (domyślnie), `ROLE_ADMIN`
-- Rejestracja wymaga: imię, email, hasło
+- Role: `ROLE_USER` (domyślnie), `ROLE_COMPANY_ADMIN`, `ROLE_ADMIN`
+- Użytkownik i company admin muszą należeć do jednej firmy
+- Rejestracja wymaga dedykowanego linku firmy, imienia, emaila i hasła
 - Potwierdzenie email i reset hasła działają przez link z tokenem
 - Reset hasła wysyła email przez Mailer (w dev do MailHog)
 - Sesja trwa 1 tydzień (`604800` sekund)
 - Wszystkie strony poza `/login`, `/register`, `/verify-email/*`, `/forgot-password`, `/reset-password/*` wymagają zalogowania
-- Dozwolone domeny email konfigurujesz przez `ALLOWED_EMAIL_DOMAINS` (CSV, np. `firma.pl,gmail.com`)
+- Dozwolone domeny email i wymagania hasła są częścią polityki rejestracji firmy
 
 ### Nadanie roli admin po emailu
 
@@ -73,6 +75,7 @@ php app/bin/console app:user:demote-admin user@example.com
 ## System rezerwacji miejsc
 
 - Szczegółowe przypadki użycia: `docs/rezerwacje-miejsc.md`.
+- Użytkownik widzi i rezerwuje wyłącznie miejsca swojej firmy.
 - Rezerwacja wolnych miejsc: tylko dziś + jutro.
 - Potwierdzenie/przekazanie przypisanego miejsca: dziś + do 7 dni wprzód.
 - Dla dnia bieżącego przypisane miejsce wraca do puli po godzinie granicznej (domyślnie 07:00), jeśli nie zostało potwierdzone.
