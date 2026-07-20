@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Przypisania miejsca firmy{% endblock %}
+
+{% block body %}
+    <main class="card bg-body-tertiary shadow-sm"><div class="card-body p-4 p-md-5">
+        <h1 class="h3">Przypisz miejsce: {{ spot.name }}</h1>
+        <p><a href="{{ path('app_company_parking_spot_index') }}">&larr; Wróć do miejsc firmy</a></p>
+        {{ form(assignmentForm) }}
+        <h2 class="h5 mt-4">Historia przypisań</h2>
+        <div class="table-responsive"><table class="table table-dark table-hover align-middle mb-0">
+            <thead><tr><th>Użytkownik</th><th>Zakres</th><th>Akcje</th></tr></thead><tbody>
+            {% for assignment in assignments %}
+                <tr><td>{{ assignment.assignedUser.name }} ({{ assignment.assignedUser.email }})</td><td>{{ assignment.startsAt|date('Y-m-d') }} - {{ assignment.endsAt ? assignment.endsAt|date('Y-m-d') : 'bezterminowo' }}</td><td><form method="post" action="{{ path('app_company_parking_spot_assignment_delete', {assignment: assignment.id}) }}"><input type="hidden" name="_token" value="{{ csrf_token('delete-assignment-' ~ assignment.id) }}"><button class="btn btn-outline-danger btn-sm" type="submit">Usuń</button></form></td></tr>
+            {% else %}<tr><td colspan="3">Brak przypisań.</td></tr>{% endfor %}
+            </tbody></table></div>
+    </div></main>
+{% endblock %}

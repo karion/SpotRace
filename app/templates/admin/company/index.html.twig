@@ -1,0 +1,64 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Panel admina - firmy{% endblock %}
+
+{% block body %}
+    <main class="card bg-body-tertiary shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h3">Panel administratora — firmy</h1>
+            <p><a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_user_index') }}">Użytkownicy</a></p>
+
+            <h2 class="h5 mt-4">Dodaj firmę</h2>
+            {{ form_start(createForm) }}
+                {{ form_row(createForm.name) }}
+                {{ form_row(createForm.slug) }}
+                {{ form_row(createForm.allowedEmailDomains) }}
+                {{ form_row(createForm.passwordMinLength) }}
+                <div class="row">
+                    <div class="col-md-3">{{ form_row(createForm.passwordRequireLowercase) }}</div>
+                    <div class="col-md-3">{{ form_row(createForm.passwordRequireUppercase) }}</div>
+                    <div class="col-md-3">{{ form_row(createForm.passwordRequireDigit) }}</div>
+                    <div class="col-md-3">{{ form_row(createForm.passwordRequireSpecial) }}</div>
+                </div>
+                {{ form_row(createForm.save) }}
+            {{ form_end(createForm) }}
+
+            <h2 class="h5 mt-4">Lista firm</h2>
+            {% if companies is empty %}
+                <p class="mb-0">Brak firm.</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead><tr><th>Nazwa</th><th>Slug</th><th>Status</th><th>Akcje</th></tr></thead>
+                        <tbody>
+                            {% for company in companies %}
+                                <tr>
+                                    <td>{{ company.name }}</td>
+                                    <td>{{ company.slug }}</td>
+                                    <td>{{ company.status }}</td>
+                                    <td>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <a class="btn btn-primary btn-sm" href="{{ path('app_admin_company_edit', {id: company.id}) }}">Edytuj</a>
+                                            <form method="post" action="{{ path('app_admin_company_block', {id: company.id}) }}">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('admin-company-' ~ company.id) }}">
+                                                <button class="btn btn-outline-warning btn-sm" type="submit">Zablokuj</button>
+                                            </form>
+                                            <form method="post" action="{{ path('app_admin_company_unlock', {id: company.id}) }}">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('admin-company-' ~ company.id) }}">
+                                                <button class="btn btn-outline-success btn-sm" type="submit">Odblokuj</button>
+                                            </form>
+                                            <form method="post" action="{{ path('app_admin_company_delete', {id: company.id}) }}" onsubmit="return confirm('Usunąć firmę?');">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('admin-company-' ~ company.id) }}">
+                                                <button class="btn btn-danger btn-sm" type="submit">Usuń</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+{% endblock %}

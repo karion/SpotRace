@@ -44,6 +44,19 @@ class ParkingReservationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /** @return array<int, ParkingReservation> */
+    public function findByParkingSpotFromDate(string $spotId, \DateTimeImmutable $date): array
+    {
+        return $this->createQueryBuilder('r')
+            ->join('r.parkingSpot', 's')
+            ->andWhere('s.id = :spotId')
+            ->andWhere('r.reservationDate >= :date')
+            ->setParameter('spotId', $spotId)
+            ->setParameter('date', $date)
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findUserReservationForDate(User $user, \DateTimeImmutable $date): ?ParkingReservation
     {
         return $this->createQueryBuilder('r')

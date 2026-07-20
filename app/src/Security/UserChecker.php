@@ -2,6 +2,7 @@
 
 namespace App\Security;
 
+use App\Entity\Company;
 use App\Entity\User;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAccountStatusException;
 use Symfony\Component\Security\Core\User\UserCheckerInterface;
@@ -25,6 +26,15 @@ class UserChecker implements UserCheckerInterface
 
         if (User::STATUS_PASSWORD_RESET_REQUIRED === $user->getStatus()) {
             throw new CustomUserMessageAccountStatusException('Musisz zresetować hasło przed zalogowaniem.');
+        }
+
+        $company = $user->getCompany();
+        if (!$user->isAdmin() && !$company instanceof Company) {
+            throw new CustomUserMessageAccountStatusException('Konto nie jest przypisane do firmy.');
+        }
+
+        if ($company instanceof Company && !$company->isActive()) {
+            throw new CustomUserMessageAccountStatusException('Firma jest zablokowana. Skontaktuj się z administratorem.');
         }
     }
 

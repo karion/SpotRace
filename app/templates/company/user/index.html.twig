@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Użytkownicy firmy{% endblock %}
+
+{% block body %}
+    <main class="card bg-body-tertiary shadow-sm"><div class="card-body p-4 p-md-5">
+        <h1 class="h3">Użytkownicy firmy {{ company.name }}</h1>
+        <p><a class="btn btn-outline-light btn-sm" href="{{ path('app_company_parking_spot_index') }}">Miejsca firmy</a></p>
+        <h2 class="h5 mt-4">Dodaj użytkownika</h2>
+        {{ form(createForm) }}
+        <h2 class="h5 mt-4">Lista użytkowników</h2>
+        <div class="table-responsive"><table class="table table-dark table-hover align-middle mb-0">
+            <thead><tr><th>Email</th><th>Imię</th><th>Status</th><th>Role</th><th>Akcje</th></tr></thead><tbody>
+            {% for managedUser in users %}
+                <tr><td>{{ managedUser.email }}</td><td>{{ managedUser.name }}</td><td>{{ managedUser.status }}</td><td>{{ managedUser.roles|join(', ') }}</td><td><div class="d-flex gap-2 flex-wrap">
+                    <a class="btn btn-primary btn-sm" href="{{ path('app_company_user_edit', {id: managedUser.id}) }}">Edytuj</a>
+                    <form method="post" action="{{ path('app_company_user_block', {id: managedUser.id}) }}"><input type="hidden" name="_token" value="{{ csrf_token('company-user-' ~ managedUser.id) }}"><button class="btn btn-outline-warning btn-sm" type="submit">Zablokuj</button></form>
+                    <form method="post" action="{{ path('app_company_user_unlock', {id: managedUser.id}) }}"><input type="hidden" name="_token" value="{{ csrf_token('company-user-' ~ managedUser.id) }}"><button class="btn btn-outline-success btn-sm" type="submit">Odblokuj</button></form>
+                </div></td></tr>
+            {% else %}<tr><td colspan="5">Brak użytkowników.</td></tr>{% endfor %}
+            </tbody></table></div>
+    </div></main>
+{% endblock %}

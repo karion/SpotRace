@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Company;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -29,6 +30,22 @@ class UserRepository extends ServiceEntityRepository
     public function findOneByPasswordResetToken(string $token): ?User
     {
         return $this->findOneBy(['passwordResetToken' => $token]);
+    }
+
+    /** @return array<int, User> */
+    public function findByCompany(Company $company): array
+    {
+        return $this->findBy(['company' => $company], ['email' => 'ASC']);
+    }
+
+    public function hasUsersForCompany(Company $company): bool
+    {
+        return (int) $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->andWhere('u.company = :company')
+            ->setParameter('company', $company)
+            ->getQuery()
+            ->getSingleScalarResult() > 0;
     }
 
     public function hasActiveAdmin(): bool

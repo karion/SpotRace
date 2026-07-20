@@ -50,6 +50,25 @@ class AdminUserService
         $this->entityManager->flush();
     }
 
+    public function promoteToCompanyAdmin(User $managedUser, ?UserInterface $currentUser): void
+    {
+        $this->denySelfAction($managedUser, $currentUser);
+        if (null === $managedUser->getCompany()) {
+            throw new AccessDeniedHttpException('Company admin musi być przypisany do firmy.');
+        }
+
+        $managedUser->promoteToCompanyAdmin();
+        $this->entityManager->flush();
+    }
+
+    public function demoteFromCompanyAdmin(User $managedUser, ?UserInterface $currentUser): void
+    {
+        $this->denySelfAction($managedUser, $currentUser);
+
+        $managedUser->demoteFromCompanyAdmin();
+        $this->entityManager->flush();
+    }
+
     private function denySelfAction(User $managedUser, ?UserInterface $currentUser): void
     {
         if ($currentUser instanceof User && $currentUser->getId() === $managedUser->getId()) {

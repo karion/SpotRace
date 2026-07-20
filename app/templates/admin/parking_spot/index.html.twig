@@ -36,6 +36,7 @@
                                     <td>
                                         <div class="d-flex gap-2 flex-wrap">
                                             <a class="btn btn-primary btn-sm" href="{{ path('app_admin_parking_spot_edit', {id: spot.id}) }}">Edytuj</a>
+                                            <a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_parking_spot_companies', {id: spot.id}) }}">Firmy</a>
                                             <a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_parking_spot_assign', {id: spot.id}) }}">Przypisania</a>
                                             <form method="post" action="{{ path('app_admin_parking_spot_delete', {id: spot.id}) }}" onsubmit="return confirm('Usunąć miejsce postojowe?');">
                                                 <button class="btn btn-danger btn-sm" type="submit">Usuń</button>

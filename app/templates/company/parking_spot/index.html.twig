@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Miejsca firmy{% endblock %}
+
+{% block body %}
+    <main class="card bg-body-tertiary shadow-sm"><div class="card-body p-4 p-md-5">
+        <h1 class="h3">Miejsca firmy {{ company.name }}</h1>
+        <p><a class="btn btn-outline-light btn-sm" href="{{ path('app_company_user_index') }}">Użytkownicy firmy</a></p>
+        <div class="table-responsive"><table class="table table-dark table-hover align-middle mb-0">
+            <thead><tr><th>Miejsce</th><th>Opis</th><th>Akcje</th></tr></thead><tbody>
+            {% for companySpot in companySpots %}
+                <tr><td>{{ companySpot.parkingSpot.name }}</td><td>{{ companySpot.parkingSpot.description }}</td><td><a class="btn btn-primary btn-sm" href="{{ path('app_company_parking_spot_assign', {id: companySpot.parkingSpot.id}) }}">Przypisania</a></td></tr>
+            {% else %}<tr><td colspan="3">Brak miejsc przypisanych do firmy.</td></tr>{% endfor %}
+            </tbody></table></div>
+    </div></main>
+{% endblock %}

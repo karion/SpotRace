@@ -61,6 +61,26 @@ class AdminUserController extends AbstractController
         return $this->redirectToRoute('app_admin_user_index');
     }
 
+    #[Route('/{id}/promote-company-admin', name: 'app_admin_user_promote_company_admin', methods: ['POST'])]
+    public function promoteCompanyAdmin(Request $request, User $user): RedirectResponse
+    {
+        $this->validateCsrf($request, $user);
+        $this->adminUserService->promoteToCompanyAdmin($user, $this->getUser());
+        $this->addFlash('success', sprintf('Użytkownik %s ma teraz rolę company admin.', $user->getEmail()));
+
+        return $this->redirectToRoute('app_admin_user_index');
+    }
+
+    #[Route('/{id}/demote-company-admin', name: 'app_admin_user_demote_company_admin', methods: ['POST'])]
+    public function demoteCompanyAdmin(Request $request, User $user): RedirectResponse
+    {
+        $this->validateCsrf($request, $user);
+        $this->adminUserService->demoteFromCompanyAdmin($user, $this->getUser());
+        $this->addFlash('success', sprintf('Użytkownik %s nie ma już roli company admin.', $user->getEmail()));
+
+        return $this->redirectToRoute('app_admin_user_index');
+    }
+
     private function validateCsrf(Request $request, User $managedUser): void
     {
         $token = (string) $request->request->get('_token', '');

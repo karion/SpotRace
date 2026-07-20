@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Firmy miejsca{% endblock %}
+
+{% block body %}
+    <main class="card bg-body-tertiary shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h3">Firmy miejsca: {{ spot.name }}</h1>
+            <p><a href="{{ path('app_admin_parking_spot_index') }}">&larr; Wróć do listy miejsc</a></p>
+
+            <h2 class="h5">Przypisz miejsce do firmy</h2>
+            {{ form_start(companyForm) }}
+                {{ form_row(companyForm.company) }}
+                {{ form_row(companyForm.startsAt) }}
+                {{ form_row(companyForm.endsAt) }}
+                {{ form_row(companyForm.save) }}
+            {{ form_end(companyForm) }}
+
+            <h2 class="h5 mt-4">Transfer miejsca</h2>
+            <form method="post" action="{{ path('app_admin_parking_spot_transfer', {id: spot.id}) }}" class="row g-3 align-items-end">
+                <input type="hidden" name="_token" value="{{ csrf_token('transfer-spot-' ~ spot.id) }}">
+                <div class="col-md-5">
+                    <label class="form-label">Firma docelowa</label>
+                    <select class="form-select" name="company_id" required>
+                        <option value="">Wybierz firmę</option>
+                        {% for company in companies %}<option value="{{ company.id }}">{{ company.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Data transferu</label>
+                    <input class="form-control" type="date" name="transfer_date" required>
+                </div>
+                <div class="col-md-3"><button class="btn btn-warning" type="submit">Zaplanuj transfer</button></div>
+            </form>
+
+            <h2 class="h5 mt-4">Historia firm</h2>
+            {% if companySpots is empty %}
+                <p>Brak przypisań do firm.</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead><tr><th>Firma</th><th>Zakres</th></tr></thead>
+                        <tbody>
+                            {% for item in companySpots %}
+                                <tr>
+                                    <td>{{ item.company.name }}</td>
+                                    <td>{{ item.startsAt|date('Y-m-d') }} - {{ item.endsAt ? item.endsAt|date('Y-m-d') : 'bezterminowo' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+{% endblock %}

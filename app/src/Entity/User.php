@@ -13,6 +13,10 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\UniqueConstraint(name: 'uniq_user_email', columns: ['email'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    public const ROLE_ADMIN = 'ROLE_ADMIN';
+    public const ROLE_COMPANY_ADMIN = 'ROLE_COMPANY_ADMIN';
+    public const ROLE_USER = 'ROLE_USER';
+
     public const STATUS_ACTIVE = 'active';
     public const STATUS_BLOCKED = 'blocked';
     public const STATUS_PASSWORD_RESET_REQUIRED = 'password_reset_required';
@@ -20,6 +24,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\Column(type: Types::GUID)]
     private string $id;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'RESTRICT')]
+    private ?Company $company = null;
 
     #[ORM\Column(length: 180)]
     private string $email;
@@ -32,7 +40,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     /** @var array<int, string> */
     #[ORM\Column(type: Types::JSON)]
-    private array $roles = ['ROLE_USER'];
+    private array $roles = [self::ROLE_USER];
 
     #[ORM\Column(length: 40)]
     private string $status = self::STATUS_ACTIVE;
@@ -57,6 +65,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getId(): string
     {
         return $this->id;
+    }
+
+    public function getCompany(): ?Company
+    {
+        return $this->company;
+    }
+
+    public function setCompany(?Company $company): self
+    {
+        $this->company = $company;
+
+        return $this;
     }
 
     public function getEmail(): string
@@ -104,7 +124,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getRoles(): array
     {
         $roles = $this->roles;
-        $roles[] = 'ROLE_USER';
+        $roles[] = self::ROLE_USER;
 
         return array_values(array_unique($roles));
     }
@@ -128,13 +148,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function isAdmin(): bool
     {
-        return in_array('ROLE_ADMIN', $this->getRoles(), true);
+        return in_array(self::ROLE_ADMIN, $this->getRoles(), true);
+    }
+
+    public function isCompanyAdmin(): bool
+    {
+        return in_array(self::ROLE_COMPANY_ADMIN, $this->getRoles(), true);
     }
 
     public function promoteToAdmin(): self
     {
         $roles = $this->getRoles();
-        $roles[] = 'ROLE_ADMIN';
+        $roles[] = self::ROLE_ADMIN;
         $this->setRoles($roles);
 
         return $this;
@@ -144,7 +169,26 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->setRoles(array_values(array_filter(
             $this->getRoles(),
-            static fn (string $role): bool => 'ROLE_ADMIN' !== $role,
+            static fn (string $role): bool => self::ROLE_ADMIN !== $role,
+        )));
+
+        return $this;
+    }
+
+    public function promoteToCompanyAdmin(): self
+    {
+        $roles = $this->getRoles();
+        $roles[] = self::ROLE_COMPANY_ADMIN;
+        $this->setRoles($roles);
+
+        return $this;
+    }
+
+    public function demoteFromCompanyAdmin(): self
+    {
+        $this->setRoles(array_values(array_filter(
+            $this->getRoles(),
+            static fn (string $role): bool => self::ROLE_COMPANY_ADMIN !== $role,
         )));
 
         return $this;
@@ -185,7 +229,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function canLogin(): bool
     {
-        return self::STATUS_ACTIVE === $this->status;
+        if (self::STATUS_ACTIVE !== $this->status) {
+            return false;
+        }
+
+        if (!$this->isAdmin() && null === $this->company) {
+            return false;
+        }
+
+        return $this->isAdmin() || $this->company?->isActive();
     }
 
     public function canRequestPasswordReset(): bool
