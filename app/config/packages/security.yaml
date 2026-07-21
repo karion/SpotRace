@@ -38,4 +38,5 @@ security:
         - { path: ^/forgot-password, roles: PUBLIC_ACCESS }
         - { path: ^/reset-password, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/company, roles: ROLE_COMPANY_ADMIN }
         - { path: ^/, roles: ROLE_USER }

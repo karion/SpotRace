@@ -6,46 +6,33 @@
     <main class="card bg-body-tertiary shadow-sm">
         <div class="card-body p-4 p-md-5">
             <h1 class="h3 mb-4">Panel administratora — użytkownicy</h1>
-            <div class="mb-4">
+            <div class="mb-4 d-flex gap-2 flex-wrap">
                 <a class="btn btn-outline-primary btn-sm" href="{{ path('app_admin_parking_spot_index') }}">Zarządzaj miejscami parkingowymi</a>
+                <a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_company_index') }}">Zarządzaj firmami</a>
             </div>
             {% if users is empty %}
                 <p class="mb-0">Brak użytkowników.</p>
             {% else %}
                 <div class="table-responsive">
                     <table class="table table-dark table-hover align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>Email</th>
-                                <th>Imię</th>
-                                <th>Role</th>
-                                <th>Status</th>
-                                <th>Akcje</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>Email</th><th>Imię</th><th>Firma</th><th>Role</th><th>Status</th><th>Akcje</th></tr></thead>
                         <tbody>
                             {% for managedUser in users %}
                                 <tr>
                                     <td>{{ managedUser.email }}</td>
                                     <td>{{ managedUser.name }}</td>
+                                    <td>{{ managedUser.company ? managedUser.company.name : 'globalny' }}</td>
                                     <td>{{ managedUser.roles|join(', ') }}</td>
                                     <td>{{ managedUser.status }}</td>
-                                    <td>
-                                        <div class="d-flex gap-2 flex-wrap">
-                                            <form method="post" action="{{ path('app_admin_user_block', {id: managedUser.id}) }}">
-                                                <input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}">
-                                                <button class="btn btn-danger btn-sm" type="submit">Zablokuj</button>
-                                            </form>
-                                            <form method="post" action="{{ path('app_admin_user_force_password_reset', {id: managedUser.id}) }}">
-                                                <input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}">
-                                                <button class="btn btn-outline-warning btn-sm" type="submit">Wymuś reset hasła</button>
-                                            </form>
-                                            <form method="post" action="{{ path('app_admin_user_unlock', {id: managedUser.id}) }}">
-                                                <input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}">
-                                                <button class="btn btn-outline-success btn-sm" type="submit">Odblokuj</button>
-                                            </form>
-                                        </div>
-                                    </td>
+                                    <td><div class="d-flex gap-2 flex-wrap">
+                                        <form method="post" action="{{ path('app_admin_user_block', {id: managedUser.id}) }}"><input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}"><button class="btn btn-danger btn-sm" type="submit">Zablokuj</button></form>
+                                        <form method="post" action="{{ path('app_admin_user_force_password_reset', {id: managedUser.id}) }}"><input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}"><button class="btn btn-outline-warning btn-sm" type="submit">Wymuś reset hasła</button></form>
+                                        <form method="post" action="{{ path('app_admin_user_unlock', {id: managedUser.id}) }}"><input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}"><button class="btn btn-outline-success btn-sm" type="submit">Odblokuj</button></form>
+                                        {% if managedUser.company %}
+                                            <form method="post" action="{{ path('app_admin_user_promote_company_admin', {id: managedUser.id}) }}"><input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}"><button class="btn btn-outline-info btn-sm" type="submit">Nadaj company admin</button></form>
+                                            <form method="post" action="{{ path('app_admin_user_demote_company_admin', {id: managedUser.id}) }}"><input type="hidden" name="_token" value="{{ csrf_token('admin-user-' ~ managedUser.id) }}"><button class="btn btn-outline-secondary btn-sm" type="submit">Odbierz company admin</button></form>
+                                        {% endif %}
+                                    </div></td>
                                 </tr>
                             {% endfor %}
                         </tbody>

@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Company;
 use App\Entity\ParkingSpotAssignment;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -80,6 +81,35 @@ class ParkingSpotAssignmentRepository extends ServiceEntityRepository
             ->join('a.parkingSpot', 's')
             ->andWhere('s.id = :spotId')
             ->setParameter('spotId', $spotId)
+            ->orderBy('a.startsAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return array<int, ParkingSpotAssignment> */
+    public function findByParkingSpotFromDate(string $spotId, \DateTimeImmutable $date): array
+    {
+        return $this->createQueryBuilder('a')
+            ->join('a.parkingSpot', 's')
+            ->andWhere('s.id = :spotId')
+            ->andWhere('a.endsAt IS NULL OR a.endsAt >= :date')
+            ->setParameter('spotId', $spotId)
+            ->setParameter('date', $date)
+            ->orderBy('a.startsAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return array<int, ParkingSpotAssignment> */
+    public function findByParkingSpotAndCompany(string $spotId, Company $company): array
+    {
+        return $this->createQueryBuilder('a')
+            ->join('a.parkingSpot', 's')
+            ->join('a.assignedUser', 'u')
+            ->andWhere('s.id = :spotId')
+            ->andWhere('u.company = :company')
+            ->setParameter('spotId', $spotId)
+            ->setParameter('company', $company)
             ->orderBy('a.startsAt', 'DESC')
             ->getQuery()
             ->getResult();

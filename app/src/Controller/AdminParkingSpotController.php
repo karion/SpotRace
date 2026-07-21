@@ -2,12 +2,16 @@
 
 namespace App\Controller;
 
+use App\Entity\Company;
 use App\Entity\ParkingSpot;
 use App\Entity\ParkingSpotAssignment;
 use App\Entity\User;
+use App\Form\CompanyParkingSpotType;
 use App\Form\ParkingSpotAssignmentType;
 use App\Form\ParkingSpotType;
+use App\Repository\CompanyRepository;
 use App\Repository\ParkingSpotRepository;
+use App\Service\CompanyParkingSpotManager;
 use App\Service\ParkingSpotAssignmentManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,7 +25,9 @@ class AdminParkingSpotController extends AbstractController
 {
     public function __construct(
         private readonly ParkingSpotRepository $parkingSpots,
+        private readonly CompanyRepository $companies,
         private readonly ParkingSpotAssignmentManager $assignmentManager,
+        private readonly CompanyParkingSpotManager $companySpotManager,
         private readonly EntityManagerInterface $entityManager,
     ) {
     }
@@ -72,6 +78,53 @@ class AdminParkingSpotController extends AbstractController
             'spot' => $parkingSpot,
             'editForm' => $form->createView(),
         ]);
+    }
+
+    #[Route('/{id}/companies', name: 'app_admin_parking_spot_companies', methods: ['GET', 'POST'])]
+    public function companies(Request $request, ParkingSpot $parkingSpot): Response
+    {
+        $companySpot = $this->companySpotManager->createDraft($parkingSpot);
+        $form = $this->createForm(CompanyParkingSpotType::class, $companySpot);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            if ($this->companySpotManager->hasValidationErrors($form, $companySpot)) {
+                $this->addFlash('error', 'Popraw błędy przypisania firmy.');
+            } else {
+                $this->companySpotManager->create($companySpot);
+                $this->addFlash('success', 'Miejsce zostało przypisane do firmy.');
+
+                return $this->redirectToRoute('app_admin_parking_spot_companies', ['id' => $parkingSpot->getId()]);
+            }
+        }
+
+        return $this->render('admin/parking_spot/companies.html.twig', [
+            'spot' => $parkingSpot,
+            'companyForm' => $form->createView(),
+            'companySpots' => $this->companySpotManager->historyForSpot($parkingSpot),
+            'companies' => $this->companies->findBy([], ['name' => 'ASC']),
+        ]);
+    }
+
+    #[Route('/{id}/transfer', name: 'app_admin_parking_spot_transfer', methods: ['POST'])]
+    public function transfer(Request $request, ParkingSpot $parkingSpot): Response
+    {
+        if (!$this->isCsrfTokenValid('transfer-spot-'.$parkingSpot->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Nieprawidłowy token CSRF.');
+        }
+
+        $company = $this->companies->find((string) $request->request->get('company_id'));
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $request->request->get('transfer_date'));
+        if (!$company instanceof Company || !$date) {
+            $this->addFlash('error', 'Wybierz firmę docelową i poprawną datę transferu.');
+
+            return $this->redirectToRoute('app_admin_parking_spot_companies', ['id' => $parkingSpot->getId()]);
+        }
+
+        $this->companySpotManager->transfer($parkingSpot, $company, $date);
+        $this->addFlash('success', 'Transfer miejsca został zaplanowany.');
+
+        return $this->redirectToRoute('app_admin_parking_spot_companies', ['id' => $parkingSpot->getId()]);
     }
 
     #[Route('/{id}/assign', name: 'app_admin_parking_spot_assign', methods: ['GET', 'POST'])]

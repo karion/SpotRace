@@ -13,6 +13,12 @@
                     <a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_user_index') }}">Użytkownicy</a>
                 </div>
             {% endif %}
+            {% if user and 'ROLE_COMPANY_ADMIN' in user.roles %}
+                <div class="d-flex gap-2 flex-wrap mb-4">
+                    <a class="btn btn-primary btn-sm" href="{{ path('app_company_parking_spot_index') }}">Miejsca firmy</a>
+                    <a class="btn btn-outline-light btn-sm" href="{{ path('app_company_user_index') }}">Użytkownicy firmy</a>
+                </div>
+            {% endif %}
 
             <h2 class="h4 mb-3">Rezerwacje i przypisane miejsca (podział na dni)</h2>
             <div class="vstack gap-4">

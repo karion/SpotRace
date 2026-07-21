@@ -2,6 +2,7 @@
 
 namespace App\Tests\Service;
 
+use App\Entity\Company;
 use App\Entity\User;
 use App\Service\AdminUserService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -82,6 +83,26 @@ class AdminUserServiceTest extends TestCase
         $this->service->block($managedUser, $currentUser);
     }
 
+    public function testPromoteToCompanyAdminRequiresCompany(): void
+    {
+        $this->entityManager->expects(self::never())->method('flush');
+
+        $this->expectException(AccessDeniedHttpException::class);
+        $this->expectExceptionMessage('Company admin musi być przypisany do firmy.');
+
+        $this->service->promoteToCompanyAdmin($this->createUser(company: null), null);
+    }
+
+    public function testPromoteToCompanyAdminAddsRole(): void
+    {
+        $user = $this->createUser(company: (new Company())->setName('Acme')->setSlug('acme'));
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $this->service->promoteToCompanyAdmin($user, null);
+
+        self::assertContains(User::ROLE_COMPANY_ADMIN, $user->getRoles());
+    }
+
     public function testUserIdIsGeneratedInPhpConstructor(): void
     {
         $user = $this->createUser();
@@ -92,9 +113,10 @@ class AdminUserServiceTest extends TestCase
         );
     }
 
-    private function createUser(): User
+    private function createUser(?Company $company = null): User
     {
         return (new User())
+            ->setCompany($company)
             ->setEmail('user@example.com')
             ->setName('User')
             ->setPasswordHash('hash');

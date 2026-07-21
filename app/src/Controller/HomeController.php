@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\ParkingReservation;
 use App\Entity\ParkingSpotAssignment;
 use App\Entity\User;
+use App\Repository\CompanyParkingSpotRepository;
 use App\Repository\ParkingReservationRepository;
 use App\Repository\ParkingSpotAssignmentRepository;
 use App\Repository\ParkingSpotRepository;
@@ -22,6 +23,7 @@ class HomeController extends AbstractController
 {
     public function __construct(
         private readonly ParkingSpotRepository $parkingSpots,
+        private readonly CompanyParkingSpotRepository $companySpots,
         private readonly ParkingSpotAssignmentRepository $assignments,
         private readonly ParkingReservationRepository $reservations,
         private readonly UserRepository $users,
@@ -35,18 +37,28 @@ class HomeController extends AbstractController
     {
         /** @var User|null $user */
         $user = $this->getUser();
-        $allSpots = $this->parkingSpots->findBy([], ['name' => 'ASC']);
+        if (!$user instanceof User || !$user->getCompany()) {
+            return $this->render('home/index.html.twig', [
+                'user' => $user,
+                'days' => [],
+            ]);
+        }
 
         $days = [];
         $today = $this->policy->today();
         $rangeEnd = $today->modify(sprintf('+%d days', $this->policy->assignedWindowDays()));
 
+        $companySpotsByDate = [];
+        foreach ($this->companySpots->findActiveForCompanyInRange($user->getCompany(), $today, $rangeEnd) as $companySpot) {
+            foreach ($this->expandCompanySpotDates($companySpot, $today, $rangeEnd) as $dateKey) {
+                $companySpotsByDate[$dateKey][$companySpot->getParkingSpot()->getId()] = $companySpot->getParkingSpot();
+            }
+        }
+
         $userAssignmentsByDate = [];
-        if ($user instanceof User) {
-            foreach ($this->assignments->findUserAssignmentsInRange($user, $today, $rangeEnd) as $assignment) {
-                foreach ($this->expandAssignmentDates($assignment, $today, $rangeEnd) as $dateKey) {
-                    $userAssignmentsByDate[$dateKey] = $assignment;
-                }
+        foreach ($this->assignments->findUserAssignmentsInRange($user, $today, $rangeEnd) as $assignment) {
+            foreach ($this->expandAssignmentDates($assignment, $today, $rangeEnd) as $dateKey) {
+                $userAssignmentsByDate[$dateKey] = $assignment;
             }
         }
 
@@ -56,7 +68,7 @@ class HomeController extends AbstractController
             $dateKey = $reservation->getReservationDate()->format('Y-m-d');
             $reservationsByDate[$dateKey][] = $reservation;
 
-            if ($user instanceof User && $reservation->getReservedForUser()->getId() === $user->getId()) {
+            if ($reservation->getReservedForUser()->getId() === $user->getId()) {
                 $userReservationsByDate[$dateKey] = $reservation;
             }
         }
@@ -85,6 +97,8 @@ class HomeController extends AbstractController
                     }
                 }
             }
+
+            $allSpots = array_values($companySpotsByDate[$dateKey] ?? []);
 
             if (!$isWithinFreeWindow && !$assignment && !$userReservation) {
                 continue;
@@ -134,6 +148,21 @@ class HomeController extends AbstractController
     }
 
     /** @return array<int, string> */
+    private function expandCompanySpotDates(\App\Entity\CompanyParkingSpot $companySpot, \DateTimeImmutable $rangeStart, \DateTimeImmutable $rangeEnd): array
+    {
+        $date = $companySpot->getStartsAt() > $rangeStart ? $companySpot->getStartsAt() : $rangeStart;
+        $endDate = $companySpot->getEndsAt() && $companySpot->getEndsAt() < $rangeEnd ? $companySpot->getEndsAt() : $rangeEnd;
+
+        $dates = [];
+        while ($date <= $endDate) {
+            $dates[] = $date->format('Y-m-d');
+            $date = $date->modify('+1 day');
+        }
+
+        return $dates;
+    }
+
+    /** @return array<int, string> */
     private function expandAssignmentDates(ParkingSpotAssignment $assignment, \DateTimeImmutable $rangeStart, \DateTimeImmutable $rangeEnd): array
     {
         $date = $assignment->getStartsAt() > $rangeStart ? $assignment->getStartsAt() : $rangeStart;
@@ -172,7 +201,7 @@ class HomeController extends AbstractController
             'date' => $date,
             'displayDate' => $this->formatPolishShortDate($date),
             'assignment' => $assignment,
-            'users' => $this->users->findBy([], ['name' => 'ASC']),
+            'users' => $user->getCompany() ? $this->users->findByCompany($user->getCompany()) : [],
             'currentUser' => $user,
         ]);
     }
@@ -193,7 +222,7 @@ class HomeController extends AbstractController
 
         $spotId = (string) $request->request->get('spot_id');
         $spot = $this->parkingSpots->find($spotId);
-        if (!$spot) {
+        if (!$spot || !$this->isSpotInUserCompany($spot, $user, $date)) {
             $this->addFlash('error', 'Nie znaleziono wskazanego miejsca.');
 
             return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
@@ -317,8 +346,8 @@ class HomeController extends AbstractController
         }
 
         $targetUser = $this->users->find((string) $request->request->get('target_user_id'));
-        if (!$targetUser instanceof User) {
-            $this->addFlash('error', 'Nie znaleziono użytkownika docelowego.');
+        if (!$targetUser instanceof User || $targetUser->getCompany()?->getId() !== $user->getCompany()?->getId()) {
+            $this->addFlash('error', 'Nie znaleziono użytkownika docelowego w Twojej firmie.');
 
             return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
         }
@@ -383,6 +412,18 @@ class HomeController extends AbstractController
         $this->addFlash('success', 'Twoja rezerwacja została zwolniona.');
 
         return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
+    }
+
+    private function isSpotInUserCompany(\App\Entity\ParkingSpot $spot, User $user, \DateTimeImmutable $date): bool
+    {
+        $company = $user->getCompany();
+        if (!$company) {
+            return false;
+        }
+
+        $companySpot = $this->companySpots->findActiveForSpot($spot, $date);
+
+        return null !== $companySpot && $companySpot->getCompany()->getId() === $company->getId();
     }
 
     private function ensureUserHasNoReservation(User $user, \DateTimeImmutable $date): bool

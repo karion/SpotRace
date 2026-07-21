@@ -2,8 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\Company;
 use App\Entity\User;
+use App\Repository\CompanyRegistrationTokenRepository;
+use App\Repository\CompanyRepository;
 use App\Repository\UserRepository;
+use App\Service\CompanyRegistrationPolicy;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,10 +24,12 @@ class AuthController extends AbstractController
 {
     public function __construct(
         private readonly UserRepository $users,
+        private readonly CompanyRepository $companies,
+        private readonly CompanyRegistrationTokenRepository $registrationTokens,
+        private readonly CompanyRegistrationPolicy $registrationPolicy,
         private readonly EntityManagerInterface $entityManager,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly MailerInterface $mailer,
-        private readonly string $allowedEmailDomains,
         private readonly string $mailerFrom,
     ) {
     }
@@ -41,11 +47,27 @@ class AuthController extends AbstractController
         ]);
     }
 
-    #[Route('/register', name: 'app_register', methods: ['GET', 'POST'])]
-    public function register(Request $request): Response
+    #[Route('/register', name: 'app_register_legacy', methods: ['GET'])]
+    public function registerLegacy(): Response
+    {
+        $this->addFlash('error', 'Rejestracja wymaga dedykowanego linku firmy.');
+
+        return $this->redirectToRoute('app_login');
+    }
+
+    #[Route('/register/{companySlug}', name: 'app_register', methods: ['GET', 'POST'])]
+    public function register(Request $request, string $companySlug): Response
     {
         if ($this->getUser()) {
             return $this->redirectToRoute('app_home');
+        }
+
+        $company = $this->companies->findOneBySlug($companySlug);
+        $tokenValue = (string) $request->query->get('token', '');
+        if (!$company instanceof Company || !$company->isActive() || !$this->registrationTokens->findUsableToken($company, $tokenValue)) {
+            $this->addFlash('error', 'Link rejestracyjny jest nieprawidłowy, wygasł albo firma jest zablokowana.');
+
+            return $this->redirectToRoute('app_login');
         }
 
         if ($request->isMethod('POST')) {
@@ -53,7 +75,7 @@ class AuthController extends AbstractController
             $email = mb_strtolower(trim((string) $request->request->get('email', '')));
             $password = (string) $request->request->get('password', '');
 
-            $errors = $this->validateRegistrationData($name, $email, $password);
+            $errors = $this->registrationPolicy->validate($name, $email, $password, $company);
             if ($this->users->findOneByEmail($email)) {
                 $errors[] = 'Użytkownik z tym emailem już istnieje.';
             }
@@ -61,9 +83,10 @@ class AuthController extends AbstractController
             if ([] === $errors) {
                 $token = bin2hex(random_bytes(32));
                 $user = (new User())
+                    ->setCompany($company)
                     ->setName($name)
                     ->setEmail($email)
-                    ->setRoles(['ROLE_USER'])
+                    ->setRoles([User::ROLE_USER])
                     ->setStatus(User::STATUS_ACTIVE)
                     ->setEmailVerificationToken($token);
 
@@ -84,7 +107,10 @@ class AuthController extends AbstractController
             }
         }
 
-        return $this->render('auth/register.html.twig');
+        return $this->render('auth/register.html.twig', [
+            'company' => $company,
+            'token' => $tokenValue,
+        ]);
     }
 
     #[Route('/verify-email/{token}', name: 'app_verify_email', methods: ['GET'])]
@@ -141,9 +167,13 @@ class AuthController extends AbstractController
             return $this->redirectToRoute('app_forgot_password');
         }
 
+        $company = $user->getCompany();
+
         if ($request->isMethod('POST')) {
             $password = (string) $request->request->get('password', '');
-            $passwordErrors = $this->validatePassword($password);
+            $passwordErrors = $company instanceof Company
+                ? $this->registrationPolicy->validatePassword($password, $company)
+                : $this->validateGlobalPassword($password);
             if ([] !== $passwordErrors) {
                 foreach ($passwordErrors as $error) {
                     $this->addFlash('error', $error);
@@ -169,6 +199,16 @@ class AuthController extends AbstractController
     public function logout(): never
     {
         throw new \LogicException('This method can be blank - it will be intercepted by the logout key on your firewall.');
+    }
+
+    /** @return array<int, string> */
+    private function validateGlobalPassword(string $password): array
+    {
+        if (mb_strlen($password) < 12) {
+            return ['Hasło musi mieć minimum 12 znaków.'];
+        }
+
+        return [];
     }
 
     private function sendEmailVerificationMessage(User $user, string $verifyLink): void
@@ -199,58 +239,5 @@ class AuthController extends AbstractController
         } catch (TransportExceptionInterface) {
             $this->addFlash('error', 'Nie udało się wysłać wiadomości email. Spróbuj ponownie później.');
         }
-    }
-
-    /** @return array<int, string> */
-    private function validateRegistrationData(string $name, string $email, string $password): array
-    {
-        $errors = [];
-
-        if ('' === $name) {
-            $errors[] = 'Imię użytkownika jest wymagane.';
-        }
-
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors[] = 'Podaj poprawny adres email.';
-        } elseif (!$this->isDomainAllowed($email)) {
-            $errors[] = 'Domena email nie jest dozwolona.';
-        }
-
-        $errors = [...$errors, ...$this->validatePassword($password)];
-
-        return $errors;
-    }
-
-    /** @return array<int, string> */
-    private function validatePassword(string $password): array
-    {
-        $errors = [];
-
-        if (mb_strlen($password) < 8) {
-            $errors[] = 'Hasło musi mieć minimum 8 znaków.';
-        }
-
-        if (!preg_match('/\p{Lu}/u', $password) || !preg_match('/\p{Ll}/u', $password)) {
-            $errors[] = 'Hasło musi zawierać co najmniej 1 wielką i 1 małą literę.';
-        }
-
-        if (!preg_match('/\d/', $password)) {
-            $errors[] = 'Hasło musi zawierać co najmniej 1 cyfrę.';
-        }
-
-        return $errors;
-    }
-
-    private function isDomainAllowed(string $email): bool
-    {
-        $allowedDomains = array_values(array_filter(array_map('trim', explode(',', $this->allowedEmailDomains))));
-        if ([] === $allowedDomains) {
-            return true;
-        }
-
-        $parts = explode('@', $email);
-        $domain = mb_strtolower((string) end($parts));
-
-        return in_array($domain, array_map('mb_strtolower', $allowedDomains), true);
     }
 }

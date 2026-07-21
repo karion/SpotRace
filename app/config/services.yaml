@@ -1,5 +1,4 @@
 parameters:
-    app.allowed_email_domains: '%env(string:ALLOWED_EMAIL_DOMAINS)%'
     app.mailer_from: '%env(string:MAILER_FROM)%'
     app.reservation.confirmation_deadline_hour: '%env(int:RESERVATION_CONFIRMATION_DEADLINE_HOUR)%'
     app.reservation.assigned_window_days: '%env(int:RESERVATION_ASSIGNED_WINDOW_DAYS)%'
@@ -24,7 +23,6 @@ services:
 
     App\Controller\AuthController:
         arguments:
-            $allowedEmailDomains: '%app.allowed_email_domains%'
             $mailerFrom: '%app.mailer_from%'
 
     App\Service\ReservationPolicy:
