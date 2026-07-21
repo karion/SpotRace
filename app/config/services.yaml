@@ -1,8 +1,5 @@
 parameters:
     app.mailer_from: '%env(string:MAILER_FROM)%'
-    app.reservation.confirmation_deadline_hour: '%env(int:RESERVATION_CONFIRMATION_DEADLINE_HOUR)%'
-    app.reservation.assigned_window_days: '%env(int:RESERVATION_ASSIGNED_WINDOW_DAYS)%'
-    app.reservation.free_window_days: '%env(int:RESERVATION_FREE_WINDOW_DAYS)%'
     app.reservation.timezone: '%env(string:APP_TIMEZONE)%'
 
 services:
@@ -27,7 +24,4 @@ services:
 
     App\Service\ReservationPolicy:
         arguments:
-            $confirmationDeadlineHour: '%app.reservation.confirmation_deadline_hour%'
-            $assignedWindowDays: '%app.reservation.assigned_window_days%'
-            $freeReservationWindowDays: '%app.reservation.free_window_days%'
             $timezone: '%app.reservation.timezone%'

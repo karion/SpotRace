@@ -6,8 +6,12 @@ use App\Entity\Company;
 
 class CompanyRegistrationPolicy
 {
+    public function __construct(private readonly SettingsResolver $settings)
+    {
+    }
+
     /** @return array<int, string> */
-    public function validate(string $name, string $email, string $password, Company $company): array
+    public function validate(string $name, string $email, string $password, ?Company $company): array
     {
         $errors = [];
 
@@ -25,31 +29,32 @@ class CompanyRegistrationPolicy
     }
 
     /** @return array<int, string> */
-    public function validatePassword(string $password, Company $company): array
+    public function validatePassword(string $password, ?Company $company): array
     {
         $errors = [];
-        if (mb_strlen($password) < $company->getPasswordMinLength()) {
-            $errors[] = sprintf('Hasło musi mieć minimum %d znaków.', $company->getPasswordMinLength());
+        $passwordMinLength = max(1, $this->settings->int(SettingKeys::REGISTRATION_PASSWORD_MIN_LENGTH, $company));
+        if (mb_strlen($password) < $passwordMinLength) {
+            $errors[] = sprintf('Hasło musi mieć minimum %d znaków.', $passwordMinLength);
         }
-        if ($company->isPasswordRequireLowercase() && !preg_match('/\p{Ll}/u', $password)) {
+        if ($this->settings->bool(SettingKeys::REGISTRATION_PASSWORD_REQUIRE_LOWERCASE, $company) && !preg_match('/\p{Ll}/u', $password)) {
             $errors[] = 'Hasło musi zawierać co najmniej 1 małą literę.';
         }
-        if ($company->isPasswordRequireUppercase() && !preg_match('/\p{Lu}/u', $password)) {
+        if ($this->settings->bool(SettingKeys::REGISTRATION_PASSWORD_REQUIRE_UPPERCASE, $company) && !preg_match('/\p{Lu}/u', $password)) {
             $errors[] = 'Hasło musi zawierać co najmniej 1 wielką literę.';
         }
-        if ($company->isPasswordRequireDigit() && !preg_match('/\d/', $password)) {
+        if ($this->settings->bool(SettingKeys::REGISTRATION_PASSWORD_REQUIRE_DIGIT, $company) && !preg_match('/\d/', $password)) {
             $errors[] = 'Hasło musi zawierać co najmniej 1 cyfrę.';
         }
-        if ($company->isPasswordRequireSpecial() && !preg_match('/[^\p{L}\d]/u', $password)) {
+        if ($this->settings->bool(SettingKeys::REGISTRATION_PASSWORD_REQUIRE_SPECIAL, $company) && !preg_match('/[^\p{L}\d]/u', $password)) {
             $errors[] = 'Hasło musi zawierać co najmniej 1 znak specjalny.';
         }
 
         return $errors;
     }
 
-    private function isDomainAllowed(string $email, Company $company): bool
+    private function isDomainAllowed(string $email, ?Company $company): bool
     {
-        $domains = $company->allowedEmailDomainList();
+        $domains = $this->settings->stringList(SettingKeys::REGISTRATION_ALLOWED_EMAIL_DOMAINS, $company);
         if ([] === $domains) {
             return true;
         }

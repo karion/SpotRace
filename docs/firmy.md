@@ -14,7 +14,7 @@ Model firm pozwala jednemu zarządcy obsługiwać wiele organizacji korzystając
 
 ## Zarządzanie firmą
 
-Admin może dodać, edytować, zablokować i usunąć firmę. Firma ma nazwę, unikalny slug, status `active` albo `blocked` oraz politykę rejestracji.
+Admin może dodać, edytować, zablokować i usunąć firmę. Firma ma nazwę, unikalny slug oraz status `active` albo `blocked`. Polityka rejestracji i limity rezerwacji wynikają z ustawień globalnych, które firma może nadpisać własnymi wartościami.
 
 Zablokowanie firmy blokuje logowanie wszystkich jej użytkowników oraz rejestrację nowych kont w tej firmie. Firmę można usunąć tylko wtedy, gdy nie ma przypisanych użytkowników oraz nie ma bieżących ani przyszłych miejsc postojowych. Reset aplikacji po wdrożeniu tej funkcji oznacza, że nie jest wymagana migracja istniejących użytkowników i miejsc do firm.
 
@@ -26,9 +26,16 @@ Firma ma dedykowany adres rejestracji:
 /register/{companySlug}?token=...
 ```
 
-Token rejestracyjny jest wielorazowy, ważny 48 godzin i może zostać wcześniej unieważniony. Firma może mieć wiele aktywnych tokenów jednocześnie. Rejestracja przypisuje konto do firmy wynikającej ze sluga i tokenu.
+Token rejestracyjny jest wielorazowy, domyślnie ważny 48 godzin i może zostać wcześniej unieważniony. Firma może mieć wiele aktywnych tokenów jednocześnie. Rejestracja przypisuje konto do firmy wynikającej ze sluga i tokenu.
 
-Polityka rejestracji firmy obejmuje dozwolone domeny e-mail oraz wymagania hasła. Domyślnie hasło ma minimum 12 znaków bez wymagań złożoności. Firma może dodatkowo wymagać małej litery, wielkiej litery, cyfry i znaku specjalnego.
+Polityka rejestracji obejmuje dozwolone domeny e-mail, wymagania hasła i czas ważności linku rejestracyjnego. Wartości domyślne są zapisane jako globalne ustawienia. Firma może nadpisać pojedyncze klucze, a brak nadpisania oznacza użycie wartości globalnej.
+
+
+## Konfiguracja globalna i firmowa
+
+Ustawienia aplikacji są przechowywane jako klucze z wartością domyślną. Nowe pole konfiguracji dodaje migracja tworząca rekord w `app_setting`. Firma może nadpisać wartość przez rekord w `company_setting`; jeśli go nie ma, obowiązuje wartość globalna.
+
+Początkowo konfigurowane są zasady rejestracji oraz limity rezerwacji: domeny email, minimalna długość i złożoność hasła, ważność linku rejestracyjnego, godzina graniczna oraz okna dni dla miejsc przypisanych i wolnych.
 
 ## Przypisanie miejsc do firm
 

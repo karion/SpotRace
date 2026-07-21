@@ -9,6 +9,9 @@ use App\Repository\CompanyParkingSpotRepository;
 use App\Repository\CompanyRegistrationTokenRepository;
 use App\Repository\CompanyRepository;
 use App\Repository\UserRepository;
+use App\Service\SettingKeys;
+use App\Service\SettingsFormHandler;
+use App\Service\SettingsResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -26,6 +29,8 @@ class AdminCompanyController extends AbstractController
         private readonly CompanyParkingSpotRepository $companySpots,
         private readonly CompanyRegistrationTokenRepository $registrationTokens,
         private readonly EntityManagerInterface $entityManager,
+        private readonly SettingsResolver $settings,
+        private readonly SettingsFormHandler $settingsForm,
     ) {
     }
 
@@ -68,7 +73,18 @@ class AdminCompanyController extends AbstractController
             'editForm' => $form->createView(),
             'tokens' => $this->registrationTokens->findByCompany($company),
             'registrationLinks' => $this->registrationLinks($company),
+            'settingGroups' => $this->settingsForm->companyRowsByGroup($company),
         ]);
+    }
+
+    #[Route('/{id}/settings', name: 'app_admin_company_settings', methods: ['POST'])]
+    public function updateSettings(Request $request, Company $company): RedirectResponse
+    {
+        $this->validateCsrf($request, $company);
+        $this->settingsForm->updateCompany($request, $company);
+        $this->addFlash('success', 'Ustawienia firmy zostały zapisane.');
+
+        return $this->redirectToRoute('app_admin_company_edit', ['id' => $company->getId()]);
     }
 
     #[Route('/{id}/block', name: 'app_admin_company_block', methods: ['POST'])]
@@ -114,7 +130,10 @@ class AdminCompanyController extends AbstractController
     public function createToken(Request $request, Company $company): RedirectResponse
     {
         $this->validateCsrf($request, $company);
-        $token = (new CompanyRegistrationToken())->setCompany($company);
+        $ttlHours = max(1, $this->settings->int(SettingKeys::REGISTRATION_TOKEN_TTL_HOURS, $company));
+        $token = (new CompanyRegistrationToken())
+            ->setCompany($company)
+            ->setExpiresAt(new \DateTimeImmutable(sprintf('+%d hours', $ttlHours)));
         $this->entityManager->persist($token);
         $this->entityManager->flush();
         $this->addFlash('success', 'Link rejestracyjny został wygenerowany.');

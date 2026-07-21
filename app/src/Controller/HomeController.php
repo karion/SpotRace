@@ -45,8 +45,9 @@ class HomeController extends AbstractController
         }
 
         $days = [];
+        $company = $user->getCompany();
         $today = $this->policy->today();
-        $rangeEnd = $today->modify(sprintf('+%d days', $this->policy->assignedWindowDays()));
+        $rangeEnd = $today->modify(sprintf('+%d days', $this->policy->assignedWindowDays($company)));
 
         $companySpotsByDate = [];
         foreach ($this->companySpots->findActiveForCompanyInRange($user->getCompany(), $today, $rangeEnd) as $companySpot) {
@@ -80,9 +81,9 @@ class HomeController extends AbstractController
             }
         }
 
-        for ($offset = 0; $offset <= $this->policy->assignedWindowDays(); ++$offset) {
+        for ($offset = 0; $offset <= $this->policy->assignedWindowDays($company); ++$offset) {
             $date = $today->modify(sprintf('+%d days', $offset));
-            $isWithinFreeWindow = $offset <= $this->policy->freeReservationWindowDays();
+            $isWithinFreeWindow = $offset <= $this->policy->freeReservationWindowDays($company);
             $dateKey = $date->format('Y-m-d');
 
             $assignment = $userAssignmentsByDate[$dateKey] ?? null;
@@ -114,7 +115,7 @@ class HomeController extends AbstractController
                 $lockedSpotIds = [];
                 foreach ($activeAssignmentsByDate[$dateKey] ?? [] as $activeAssignment) {
                     $spotId = $activeAssignment->getParkingSpot()->getId();
-                    if ($this->policy->isAssignmentLockedForOthers($date) && (!$assignment || $assignment->getParkingSpot()->getId() !== $spotId)) {
+                    if ($this->policy->isAssignmentLockedForOthers($date, $company) && (!$assignment || $assignment->getParkingSpot()->getId() !== $spotId)) {
                         $lockedSpotIds[$spotId] = true;
                     }
                 }
@@ -133,10 +134,10 @@ class HomeController extends AbstractController
                 'isWithinFreeWindow' => $isWithinFreeWindow,
                 'assignment' => $assignment,
                 'userReservation' => $userReservation,
-                'canManageAssigned' => $assignment && $this->policy->canManageAssignedSpot($date) && !$assignedSpotReserved && !$userReservation,
+                'canManageAssigned' => $assignment && $this->policy->canManageAssignedSpot($date, $company) && !$assignedSpotReserved && !$userReservation,
                 'assignedSpotReserved' => $assignedSpotReserved,
                 'canReserveFree' => $isWithinFreeWindow && !$userReservation,
-                'canReleaseReservation' => $userReservation && $this->policy->canReleaseReservation($date),
+                'canReleaseReservation' => $userReservation && $this->policy->canReleaseReservation($date, $company),
                 'availableSpots' => $availableSpots,
             ];
         }
@@ -182,9 +183,16 @@ class HomeController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
+        $company = $user->getCompany();
+        if (!$company) {
+            $this->addFlash('error', 'Konto nie jest przypisane do firmy.');
+
+            return $this->redirectToRoute('app_home');
+        }
+
         $date = $this->mustParseDate((string) $request->query->get('date'));
 
-        if (!$this->policy->canManageAssignedSpot($date)) {
+        if (!$this->policy->canManageAssignedSpot($date, $company)) {
             $this->addFlash('error', 'Przekazanie miejsca jest możliwe do 7 dni wprzód.');
 
             return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
@@ -211,6 +219,13 @@ class HomeController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
+        $company = $user->getCompany();
+        if (!$company) {
+            $this->addFlash('error', 'Konto nie jest przypisane do firmy.');
+
+            return $this->redirectToRoute('app_home');
+        }
+
         $date = $this->mustParseDate((string) $request->request->get('date'));
         $this->validateCsrf($request, 'reserve-free-'.$date->format('Y-m-d'));
 
@@ -242,7 +257,7 @@ class HomeController extends AbstractController
         }
 
         foreach ($this->assignments->findActiveForDate($date) as $a) {
-            if ($a->getParkingSpot()->getId() === $spotId && $this->policy->isAssignmentLockedForOthers($date)) {
+            if ($a->getParkingSpot()->getId() === $spotId && $this->policy->isAssignmentLockedForOthers($date, $company)) {
                 $this->addFlash('error', 'To miejsce jest czasowo zarezerwowane dla osoby przypisanej.');
 
                 return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
@@ -275,10 +290,17 @@ class HomeController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
+        $company = $user->getCompany();
+        if (!$company) {
+            $this->addFlash('error', 'Konto nie jest przypisane do firmy.');
+
+            return $this->redirectToRoute('app_home');
+        }
+
         $date = $this->mustParseDate((string) $request->request->get('date'));
         $this->validateCsrf($request, 'confirm-assigned-'.$date->format('Y-m-d'));
 
-        if (!$this->policy->canManageAssignedSpot($date)) {
+        if (!$this->policy->canManageAssignedSpot($date, $company)) {
             $this->addFlash('error', 'Potwierdzenie przypisanego miejsca jest możliwe do 7 dni wprzód.');
 
             return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
@@ -329,10 +351,17 @@ class HomeController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
+        $company = $user->getCompany();
+        if (!$company) {
+            $this->addFlash('error', 'Konto nie jest przypisane do firmy.');
+
+            return $this->redirectToRoute('app_home');
+        }
+
         $date = $this->mustParseDate((string) $request->request->get('date'));
         $this->validateCsrf($request, 'delegate-assigned-'.$date->format('Y-m-d'));
 
-        if (!$this->policy->canManageAssignedSpot($date)) {
+        if (!$this->policy->canManageAssignedSpot($date, $company)) {
             $this->addFlash('error', 'Przekazanie miejsca jest możliwe do 7 dni wprzód.');
 
             return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
@@ -390,11 +419,18 @@ class HomeController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
+        $company = $user->getCompany();
+        if (!$company) {
+            $this->addFlash('error', 'Konto nie jest przypisane do firmy.');
+
+            return $this->redirectToRoute('app_home');
+        }
+
         $date = $this->mustParseDate((string) $request->request->get('date'));
         $this->validateCsrf($request, 'release-reservation-'.$date->format('Y-m-d'));
 
-        if (!$this->policy->canReleaseReservation($date)) {
-            $this->addFlash('error', sprintf('Zwolnienie miejsca jest możliwe do %s wybranego dnia.', $this->policy->formattedConfirmationDeadline()));
+        if (!$this->policy->canReleaseReservation($date, $company)) {
+            $this->addFlash('error', sprintf('Zwolnienie miejsca jest możliwe do %s wybranego dnia.', $this->policy->formattedConfirmationDeadline($company)));
 
             return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
         }

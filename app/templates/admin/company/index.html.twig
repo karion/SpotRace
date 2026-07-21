@@ -6,20 +6,15 @@
     <main class="card bg-body-tertiary shadow-sm">
         <div class="card-body p-4 p-md-5">
             <h1 class="h3">Panel administratora — firmy</h1>
-            <p><a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_user_index') }}">Użytkownicy</a></p>
+            <div class="mb-3 d-flex gap-2 flex-wrap">
+                <a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_user_index') }}">Użytkownicy</a>
+                <a class="btn btn-outline-primary btn-sm" href="{{ path('app_admin_settings_index') }}">Ustawienia globalne</a>
+            </div>
 
             <h2 class="h5 mt-4">Dodaj firmę</h2>
             {{ form_start(createForm) }}
                 {{ form_row(createForm.name) }}
                 {{ form_row(createForm.slug) }}
-                {{ form_row(createForm.allowedEmailDomains) }}
-                {{ form_row(createForm.passwordMinLength) }}
-                <div class="row">
-                    <div class="col-md-3">{{ form_row(createForm.passwordRequireLowercase) }}</div>
-                    <div class="col-md-3">{{ form_row(createForm.passwordRequireUppercase) }}</div>
-                    <div class="col-md-3">{{ form_row(createForm.passwordRequireDigit) }}</div>
-                    <div class="col-md-3">{{ form_row(createForm.passwordRequireSpecial) }}</div>
-                </div>
                 {{ form_row(createForm.save) }}
             {{ form_end(createForm) }}
 
