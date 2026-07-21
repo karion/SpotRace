@@ -73,7 +73,7 @@ class AdminCompanyController extends AbstractController
             'editForm' => $form->createView(),
             'tokens' => $this->registrationTokens->findByCompany($company),
             'registrationLinks' => $this->registrationLinks($company),
-            'settings' => $this->settingsForm->companyRows($company),
+            'settingGroups' => $this->settingsForm->companyRowsByGroup($company),
         ]);
     }
 

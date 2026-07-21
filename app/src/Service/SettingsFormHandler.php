@@ -32,26 +32,28 @@ class SettingsFormHandler
         );
     }
 
-    /** @return array<int, array{setting: AppSetting, globalValue: string, effectiveValue: string, overrideValue: string, hasOverride: bool}> */
-    public function companyRows(Company $company): array
+    /** @return array<string, array<int, array{setting: AppSetting, globalValue: string, effectiveValue: string, overrideValue: string, sourceLabel: string, sourceBadge: string, hasOverride: bool}>> */
+    public function companyRowsByGroup(Company $company): array
     {
         $overrides = $this->companySettings->findByCompanyIndexed($company);
+        $groups = [];
 
-        return array_map(
-            function (AppSetting $setting) use ($overrides): array {
-                $override = $overrides[$setting->getKey()] ?? null;
-                $effectiveValue = $override instanceof CompanySetting ? $override->getValue() : $setting->getValue();
+        foreach ($this->appSettings->findForForm() as $setting) {
+            $override = $overrides[$setting->getKey()] ?? null;
+            $hasOverride = $override instanceof CompanySetting;
+            $effectiveValue = $hasOverride ? $override->getValue() : $setting->getValue();
+            $groups[$setting->getGroup()][] = [
+                'setting' => $setting,
+                'globalValue' => $this->displayValue($setting->getValue(), $setting->getType()),
+                'effectiveValue' => $this->displayValue($effectiveValue, $setting->getType()),
+                'overrideValue' => $this->normalizer->formatForForm($effectiveValue, $setting->getType()),
+                'sourceLabel' => $hasOverride ? 'Nadpisane przez firmę' : 'Dziedziczone z globalnych',
+                'sourceBadge' => $hasOverride ? 'text-bg-info' : 'text-bg-secondary',
+                'hasOverride' => $hasOverride,
+            ];
+        }
 
-                return [
-                    'setting' => $setting,
-                    'globalValue' => $this->normalizer->formatForForm($setting->getValue(), $setting->getType()),
-                    'effectiveValue' => $this->normalizer->formatForForm($effectiveValue, $setting->getType()),
-                    'overrideValue' => $this->normalizer->formatForForm($effectiveValue, $setting->getType()),
-                    'hasOverride' => $override instanceof CompanySetting,
-                ];
-            },
-            $this->appSettings->findForForm(),
-        );
+        return $groups;
     }
 
     public function updateGlobal(Request $request): void
@@ -103,6 +105,17 @@ class SettingsFormHandler
     private function requestArray(Request $request, string $key): array
     {
         return $request->request->all($key);
+    }
+
+    private function displayValue(mixed $value, string $type): string
+    {
+        if (AppSetting::TYPE_BOOL === $type) {
+            return true === $this->normalizer->normalize($value, $type) ? 'tak' : 'nie';
+        }
+
+        $formatted = $this->normalizer->formatForForm($value, $type);
+
+        return '' === $formatted ? 'puste' : $formatted;
     }
 
     /** @param array<string, mixed> $values */
