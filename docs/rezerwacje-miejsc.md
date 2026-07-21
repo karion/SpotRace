@@ -11,8 +11,8 @@
 5. Przypisana osoba może:
    - potwierdzić swoje miejsce (dla dziś i do 7 dni w przód),
    - przekazać swoje miejsce innej osobie (dla dziś i do 7 dni w przód).
-6. Dla dnia bieżącego przypisane miejsce jest zablokowane dla innych użytkowników tej samej firmy do godziny 07:00.
-7. Zwykły użytkownik może rezerwować wolne miejsca swojej firmy na dowolny dzień w dozwolonym oknie.
+6. Dla dnia bieżącego przypisane miejsce jest zablokowane dla innych użytkowników tej samej firmy do skonfigurowanej godziny granicznej, domyślnie 07:00.
+7. Zwykły użytkownik może rezerwować wolne miejsca swojej firmy na dowolny dzień w oknie skonfigurowanym globalnie albo nadpisanym dla firmy.
 8. Jedna osoba może mieć maksymalnie jedną rezerwację dziennie.
 9. Nie można zarezerwować miejsca już zarezerwowanego.
 10. Admin rezerwuje miejsca tak samo jak użytkownik.
@@ -49,7 +49,7 @@
 
 ### UC-04: Użytkownik rezerwuje wolne miejsce
 - **Aktor:** Użytkownik
-- **Warunek wstępny:** Wybrana data to dziś lub jutro.
+- **Warunek wstępny:** Wybrana data mieści się w oknie rezerwacji wolnych miejsc firmy.
 - **Kroki:**
   1. Użytkownik wybiera dzień.
   2. Widzi listę wolnych miejsc swojej firmy.
@@ -76,11 +76,12 @@
 
 ## Konfiguracja
 
-Wartości można zmieniać przez zmienne środowiskowe:
+Limity rezerwacji są ustawieniami globalnymi z możliwością nadpisania dla firmy:
 
-- `APP_TIMEZONE` — strefa czasowa (np. `Europe/Warsaw`).
-- `RESERVATION_CONFIRMATION_DEADLINE_HOUR` — godzina graniczna (domyślnie 7).
-- `RESERVATION_ASSIGNED_WINDOW_DAYS` — ile dni wprzód można potwierdzać/przekazywać przypisane miejsce.
-- `RESERVATION_FREE_WINDOW_DAYS` — ile dni wprzód można rezerwować wolne miejsca.
+- `reservation.confirmation_deadline_hour` — godzina graniczna (domyślnie 7).
+- `reservation.assigned_window_days` — ile dni wprzód można potwierdzać/przekazywać przypisane miejsce.
+- `reservation.free_window_days` — ile dni wprzód można rezerwować wolne miejsca.
+
+Strefa czasowa pozostaje zmienną środowiskową `APP_TIMEZONE`.
 
 Szczegółowy model firm i transferu miejsc opisuje `docs/firmy.md`.

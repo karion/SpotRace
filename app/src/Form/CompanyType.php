@@ -4,10 +4,7 @@ namespace App\Form;
 
 use App\Entity\Company;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -35,18 +32,6 @@ class CompanyType extends AbstractType
                     new Regex(pattern: '/^[a-z0-9-]+$/', message: 'Slug może zawierać małe litery, cyfry i myślniki.'),
                 ],
             ])
-            ->add('allowedEmailDomains', TextareaType::class, [
-                'label' => 'Dozwolone domeny email (CSV, opcjonalnie)',
-                'required' => false,
-                'attr' => ['rows' => 2],
-            ])
-            ->add('passwordMinLength', IntegerType::class, [
-                'label' => 'Minimalna długość hasła',
-            ])
-            ->add('passwordRequireLowercase', CheckboxType::class, ['label' => 'Wymagaj małej litery', 'required' => false])
-            ->add('passwordRequireUppercase', CheckboxType::class, ['label' => 'Wymagaj wielkiej litery', 'required' => false])
-            ->add('passwordRequireDigit', CheckboxType::class, ['label' => 'Wymagaj cyfry', 'required' => false])
-            ->add('passwordRequireSpecial', CheckboxType::class, ['label' => 'Wymagaj znaku specjalnego', 'required' => false])
             ->add('save', SubmitType::class, ['label' => $options['submit_label']]);
     }
 

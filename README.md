@@ -52,7 +52,7 @@ make migrate
 - Reset hasła wysyła email przez Mailer (w dev do MailHog)
 - Sesja trwa 1 tydzień (`604800` sekund)
 - Wszystkie strony poza `/login`, `/register`, `/verify-email/*`, `/forgot-password`, `/reset-password/*` wymagają zalogowania
-- Dozwolone domeny email i wymagania hasła są częścią polityki rejestracji firmy
+- Dozwolone domeny email, wymagania hasła i czas ważności linku wynikają z ustawień globalnych lub nadpisań firmy
 
 ### Nadanie roli admin po emailu
 
@@ -76,13 +76,12 @@ php app/bin/console app:user:demote-admin user@example.com
 
 - Szczegółowe przypadki użycia: `docs/rezerwacje-miejsc.md`.
 - Użytkownik widzi i rezerwuje wyłącznie miejsca swojej firmy.
-- Rezerwacja wolnych miejsc: tylko dziś + jutro.
-- Potwierdzenie/przekazanie przypisanego miejsca: dziś + do 7 dni wprzód.
+- Rezerwacja wolnych miejsc, potwierdzenie/przekazanie przypisanego miejsca i godzina graniczna korzystają z ustawień globalnych albo nadpisań firmy.
+- Domyślnie wolne miejsca można rezerwować dziś + jutro, a przypisane potwierdzać/przekazywać dziś + do 7 dni wprzód.
 - Dla dnia bieżącego przypisane miejsce wraca do puli po godzinie granicznej (domyślnie 07:00), jeśli nie zostało potwierdzone.
 
-### Zmienne konfiguracyjne
+### Konfiguracja
 
-- `APP_TIMEZONE` (domyślnie `Europe/Warsaw`)
-- `RESERVATION_CONFIRMATION_DEADLINE_HOUR` (domyślnie `7`)
-- `RESERVATION_ASSIGNED_WINDOW_DAYS` (domyślnie `7`)
-- `RESERVATION_FREE_WINDOW_DAYS` (domyślnie `1`)
+- `APP_TIMEZONE` pozostaje zmienną środowiskową (domyślnie `Europe/Warsaw`).
+- Ustawienia rejestracji i rezerwacji są zapisywane w bazie w `app_setting`.
+- Firma może nadpisać wybrane wartości w `company_setting`; bez nadpisania używana jest wartość globalna.

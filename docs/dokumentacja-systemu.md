@@ -19,11 +19,11 @@ System pozwala na:
 ### 2.1. Uwierzytelnianie, firmy i konta
 
 - Rejestracja użytkownika przez dedykowany adres firmy: `/register/{companySlug}?token=...`.
-- Token rejestracyjny firmy jest wielorazowy, ważny 48 godzin i może zostać unieważniony.
+- Token rejestracyjny firmy jest wielorazowy, domyślnie ważny 48 godzin i może zostać unieważniony.
 - Firma może mieć wiele aktywnych tokenów rejestracyjnych.
 - Rejestracja przypisuje użytkownika do firmy wynikającej ze sluga i tokenu.
-- Firma definiuje dozwolone domeny e-mail oraz politykę hasła.
-- Domyślna polityka hasła firmy wymaga minimum 12 znaków bez dodatkowej złożoności.
+- Dozwolone domeny e-mail, polityka hasła i ważność linku wynikają z ustawień globalnych albo nadpisań firmy.
+- Domyślna polityka hasła wymaga minimum 12 znaków bez dodatkowej złożoności.
 - Potwierdzenie adresu e-mail przez token.
 - Logowanie formularzem (`email` + `password`) i sesja użytkownika.
 - Reset hasła z linkiem ważnym 1 godzinę.
@@ -50,7 +50,7 @@ System pozwala na:
 ### 2.3. Zarządzanie firmami
 
 - Admin może dodać, edytować, zablokować i usunąć firmę.
-- Firma ma nazwę, unikalny slug, status `active/blocked` oraz politykę rejestracji.
+- Firma ma nazwę, unikalny slug i status `active/blocked`.
 - Zablokowanie firmy blokuje logowanie jej użytkowników oraz rejestrację nowych kont.
 - Firmę można usunąć tylko wtedy, gdy nie ma użytkowników ani bieżących lub przyszłych miejsc postojowych.
 - Company admin zarządza kontami użytkowników swojej firmy, ale nie nadaje ani nie odbiera ról.
@@ -74,7 +74,7 @@ System pozwala na:
 - Przekazanie przypisanego miejsca innej osobie (to samo okno co potwierdzenie).
 - Zwolnienie własnej rezerwacji:
   - dla dni przyszłych zawsze,
-  - dla dnia bieżącego do godziny granicznej (`RESERVATION_CONFIRMATION_DEADLINE_HOUR`).
+  - dla dnia bieżącego do skonfigurowanej godziny granicznej firmy.
 - Ograniczenia spójności:
   - jeden użytkownik może mieć tylko jedną rezerwację na dzień,
   - jedno miejsce może być zarezerwowane tylko raz na dzień,
@@ -165,12 +165,9 @@ System pozwala na:
 Parametry przez zmienne środowiskowe:
 
 - `APP_TIMEZONE`,
-- `RESERVATION_CONFIRMATION_DEADLINE_HOUR`,
-- `RESERVATION_ASSIGNED_WINDOW_DAYS`,
-- `RESERVATION_FREE_WINDOW_DAYS`,
 - `MAILER_FROM`.
 
-Po wprowadzeniu firm walidacja domen e-mail jest częścią polityki rejestracji firmy, a nie globalnej konfiguracji.
+Ustawienia rejestracji i rezerwacji są przechowywane w bazie jako klucze `app_setting`. Firma może nadpisać wybrane klucze przez `company_setting`; brak nadpisania oznacza użycie wartości globalnej. Nowe klucze ustawień dodaje migracja.
 
 W środowisku developerskim uruchomionym przez Docker Compose:
 

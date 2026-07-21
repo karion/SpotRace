@@ -171,9 +171,7 @@ class AuthController extends AbstractController
 
         if ($request->isMethod('POST')) {
             $password = (string) $request->request->get('password', '');
-            $passwordErrors = $company instanceof Company
-                ? $this->registrationPolicy->validatePassword($password, $company)
-                : $this->validateGlobalPassword($password);
+            $passwordErrors = $this->registrationPolicy->validatePassword($password, $company);
             if ([] !== $passwordErrors) {
                 foreach ($passwordErrors as $error) {
                     $this->addFlash('error', $error);
@@ -199,16 +197,6 @@ class AuthController extends AbstractController
     public function logout(): never
     {
         throw new \LogicException('This method can be blank - it will be intercepted by the logout key on your firewall.');
-    }
-
-    /** @return array<int, string> */
-    private function validateGlobalPassword(string $password): array
-    {
-        if (mb_strlen($password) < 12) {
-            return ['Hasło musi mieć minimum 12 znaków.'];
-        }
-
-        return [];
     }
 
     private function sendEmailVerificationMessage(User $user, string $verifyLink): void
