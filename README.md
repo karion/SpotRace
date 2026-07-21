@@ -35,7 +35,15 @@ make build
 make logs
 make sf CMD='about'
 make migrate
+make db-reset          # usuwa bazę dev, tworzy ją ponownie i uruchamia migracje
+make db-fixtures       # ładuje startowe dane developerskie
+make db-reset-fixtures # resetuje bazę i ładuje dane startowe
 ```
+
+
+## Dane startowe developerskie
+
+Po `make db-fixtures` dostępne są konta testowe z hasłem `Password123!`, w tym `admin@spotrace.test`, company admini i użytkownicy firm Acme oraz Globex. Komenda jest idempotentna i nie powiela rekordów przy kolejnym uruchomieniu.
 
 ## Dokumentacja
 
