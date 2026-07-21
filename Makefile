@@ -4,7 +4,7 @@ DC := docker compose
 SERVICE_APP := frankenphp
 SERVICE_DB := mysql
 
-.PHONY: help up down restart build ps logs app-shell db-shell composer-install composer-update composer-require sf migrate phpunit phpstan php-cs-fixer php-cs-fixer-check
+.PHONY: help up down restart build ps logs app-shell db-shell composer-install composer-update composer-require sf migrate db-reset db-fixtures db-reset-fixtures phpunit phpstan php-cs-fixer php-cs-fixer-check
 
 help:
 	@echo "Available targets:"
@@ -21,6 +21,9 @@ help:
 	@echo "  make composer-require PACKAGE=vendor/package - Require package"
 	@echo "  make sf CMD='about'   - Run Symfony console command"
 	@echo "  make migrate          - Run doctrine migrations"
+	@echo "  make db-reset         - Drop, create and migrate development database"
+	@echo "  make db-fixtures      - Load development fixtures"
+	@echo "  make db-reset-fixtures - Reset database and load development fixtures"
 	@echo "  make phpunit          - Run PHPUnit tests"
 	@echo "  make phpstan          - Run PHPStan analysis"
 	@echo "  make php-cs-fixer     - Fix PHP coding style"
@@ -65,6 +68,16 @@ sf:
 
 migrate:
 	$(DC) exec $(SERVICE_APP) php bin/console doctrine:migrations:migrate --no-interaction
+
+db-reset:
+	$(DC) exec $(SERVICE_APP) php bin/console doctrine:database:drop --force --if-exists
+	$(DC) exec $(SERVICE_APP) php bin/console doctrine:database:create --if-not-exists
+	$(DC) exec $(SERVICE_APP) php bin/console doctrine:migrations:migrate --no-interaction
+
+db-fixtures:
+	$(DC) exec $(SERVICE_APP) php bin/console app:fixtures:load
+
+db-reset-fixtures: db-reset db-fixtures
 
 phpunit:
 	$(DC) exec $(SERVICE_APP) php bin/phpunit
