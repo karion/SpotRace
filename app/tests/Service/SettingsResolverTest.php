@@ -16,7 +16,7 @@ class SettingsResolverTest extends TestCase
     public function testReturnsGlobalValueWhenCompanyOverrideDoesNotExist(): void
     {
         $company = (new Company())->setName('Acme')->setSlug('acme');
-        $resolver = $this->resolver($this->setting('reservation.free_window_days', AppSetting::TYPE_INT, 1), null);
+        $resolver = $this->resolver([$this->setting('reservation.free_window_days', AppSetting::TYPE_INT, 1)], []);
 
         self::assertSame(1, $resolver->int('reservation.free_window_days', $company));
     }
@@ -28,22 +28,62 @@ class SettingsResolverTest extends TestCase
             ->setCompany($company)
             ->setKey('reservation.free_window_days')
             ->setValue(3);
-        $resolver = $this->resolver($this->setting('reservation.free_window_days', AppSetting::TYPE_INT, 1), $override);
+        $resolver = $this->resolver([$this->setting('reservation.free_window_days', AppSetting::TYPE_INT, 1)], [
+            'reservation.free_window_days' => $override,
+        ]);
 
         self::assertSame(3, $resolver->int('reservation.free_window_days', $company));
     }
 
     public function testNormalizesStringListValues(): void
     {
-        $resolver = $this->resolver($this->setting('registration.allowed_email_domains', AppSetting::TYPE_STRING_LIST, 'ACME.test, example.com'), null);
+        $resolver = $this->resolver([$this->setting('registration.allowed_email_domains', AppSetting::TYPE_STRING_LIST, 'ACME.test, example.com')], []);
 
         self::assertSame(['acme.test', 'example.com'], $resolver->stringList('registration.allowed_email_domains'));
+    }
+
+    public function testCachesGlobalSettingsForRequest(): void
+    {
+        $settings = [
+            $this->setting('reservation.free_window_days', AppSetting::TYPE_INT, 1),
+            $this->setting('reservation.assigned_window_days', AppSetting::TYPE_INT, 7),
+        ];
+        $appSettings = $this->createMock(AppSettingRepository::class);
+        $appSettings->expects(self::once())->method('findForForm')->willReturn($settings);
+        $companySettings = $this->createMock(CompanySettingRepository::class);
+        $companySettings->expects(self::never())->method('findByCompanyIndexed');
+        $resolver = new SettingsResolver($appSettings, $companySettings, new SettingValueNormalizer());
+
+        self::assertSame(1, $resolver->int('reservation.free_window_days'));
+        self::assertSame(7, $resolver->int('reservation.assigned_window_days'));
+        self::assertSame(1, $resolver->int('reservation.free_window_days'));
+    }
+
+    public function testCachesCompanySettingsPerCompanyForRequest(): void
+    {
+        $company = (new Company())->setName('Acme')->setSlug('acme');
+        $override = (new CompanySetting())
+            ->setCompany($company)
+            ->setKey('reservation.free_window_days')
+            ->setValue(3);
+        $appSettings = $this->createMock(AppSettingRepository::class);
+        $appSettings->expects(self::once())->method('findForForm')->willReturn([
+            $this->setting('reservation.free_window_days', AppSetting::TYPE_INT, 1),
+        ]);
+        $companySettings = $this->createMock(CompanySettingRepository::class);
+        $companySettings->expects(self::once())->method('findByCompanyIndexed')->with($company)->willReturn([
+            'reservation.free_window_days' => $override,
+        ]);
+        $resolver = new SettingsResolver($appSettings, $companySettings, new SettingValueNormalizer());
+
+        self::assertSame(3, $resolver->int('reservation.free_window_days', $company));
+        self::assertSame(3, $resolver->int('reservation.free_window_days', $company));
     }
 
     public function testThrowsWhenGlobalSettingIsMissing(): void
     {
         $appSettings = $this->createMock(AppSettingRepository::class);
-        $appSettings->method('findOneByKey')->willReturn(null);
+        $appSettings->method('findForForm')->willReturn([]);
         $companySettings = $this->createMock(CompanySettingRepository::class);
         $resolver = new SettingsResolver($appSettings, $companySettings, new SettingValueNormalizer());
 
@@ -61,12 +101,16 @@ class SettingsResolverTest extends TestCase
             ->setGroup('Test');
     }
 
-    private function resolver(AppSetting $setting, ?CompanySetting $override): SettingsResolver
+    /**
+     * @param array<int, AppSetting>        $settings
+     * @param array<string, CompanySetting> $overrides
+     */
+    private function resolver(array $settings, array $overrides): SettingsResolver
     {
         $appSettings = $this->createMock(AppSettingRepository::class);
-        $appSettings->method('findOneByKey')->willReturn($setting);
+        $appSettings->method('findForForm')->willReturn($settings);
         $companySettings = $this->createMock(CompanySettingRepository::class);
-        $companySettings->method('findOneByCompanyAndKey')->willReturn($override);
+        $companySettings->method('findByCompanyIndexed')->willReturn($overrides);
 
         return new SettingsResolver($appSettings, $companySettings, new SettingValueNormalizer());
     }
