@@ -6,6 +6,7 @@ use App\Repository\ParkingLocationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ParkingLocationRepository::class)]
@@ -24,7 +25,7 @@ class ParkingLocation
 
     public function __construct()
     {
-        $this->id = self::generateUuidV4();
+        $this->id = Uuid::v4()->toRfc4122();
     }
 
     public function getId(): string
@@ -42,14 +43,5 @@ class ParkingLocation
         $this->name = trim($name);
 
         return $this;
-    }
-
-    private static function generateUuidV4(): string
-    {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0F) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3F) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 }
