@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Panel admina — lokalizacje{% endblock %}
+
+{% block body %}
+    <main class="card bg-body-tertiary shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h3">Lokalizacje parkingowe</h1>
+            <p><a href="{{ path('app_admin_parking_spot_index') }}">← Miejsca postojowe</a></p>
+
+            <h2 class="h5 mt-4">Dodaj lokalizację</h2>
+            {{ form_start(createForm) }}
+                {{ form_errors(createForm) }}
+                {{ form_row(createForm.name) }}
+                {{ form_row(createForm.save) }}
+            {{ form_end(createForm) }}
+
+            <h2 class="h5 mt-4">Lista lokalizacji</h2>
+            {% if locations is empty %}
+                <p>Brak lokalizacji. Dodaj pierwszą, aby móc wybrać ją dla miejsca postojowego.</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle">
+                        <thead><tr><th>Nazwa</th><th>Akcje</th></tr></thead>
+                        <tbody>
+                            {% for location in locations %}
+                                <tr>
+                                    <td>{{ location.name }}</td>
+                                    <td>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <a class="btn btn-primary btn-sm" href="{{ path('app_admin_location_edit', {id: location.id}) }}">Edytuj</a>
+                                            <form method="post" action="{{ path('app_admin_location_delete', {id: location.id}) }}" onsubmit="return confirm('Usunąć lokalizację?');">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete-location-' ~ location.id) }}">
+                                                <button class="btn btn-danger btn-sm" type="submit">Usuń</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+{% endblock %}

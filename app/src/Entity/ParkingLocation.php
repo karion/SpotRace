@@ -2,38 +2,25 @@
 
 namespace App\Entity;
 
-use App\Repository\ParkingSpotRepository;
+use App\Repository\ParkingLocationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: ParkingSpotRepository::class)]
-class ParkingSpot
+#[ORM\Entity(repositoryClass: ParkingLocationRepository::class)]
+#[ORM\UniqueConstraint(name: 'uniq_parking_location_name', columns: ['name'])]
+#[UniqueEntity(fields: ['name'], message: 'Lokalizacja o tej nazwie już istnieje.')]
+class ParkingLocation
 {
     #[ORM\Id]
     #[ORM\Column(type: Types::GUID)]
     private string $id;
 
     #[ORM\Column(length: 120)]
-    private string $name;
-
-    #[ORM\Column(type: Types::TEXT)]
-    private string $description;
-
-    #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: true, onDelete: 'RESTRICT')]
-    private ?ParkingLocation $location = null;
-
-    public function getLocation(): ?ParkingLocation
-    {
-        return $this->location;
-    }
-
-    public function setLocation(?ParkingLocation $location): self
-    {
-        $this->location = $location;
-
-        return $this;
-    }
+    #[Assert\NotBlank(message: 'Nazwa lokalizacji jest wymagana.')]
+    #[Assert\Length(max: 120, maxMessage: 'Nazwa może mieć maksymalnie {{ limit }} znaków.')]
+    private string $name = '';
 
     public function __construct()
     {
@@ -53,18 +40,6 @@ class ParkingSpot
     public function setName(string $name): self
     {
         $this->name = trim($name);
-
-        return $this;
-    }
-
-    public function getDescription(): string
-    {
-        return $this->description;
-    }
-
-    public function setDescription(string $description): self
-    {
-        $this->description = trim($description);
 
         return $this;
     }

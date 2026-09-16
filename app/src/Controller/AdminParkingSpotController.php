@@ -52,7 +52,7 @@ class AdminParkingSpotController extends AbstractController
         }
 
         return $this->render('admin/parking_spot/index.html.twig', [
-            'spots' => $this->parkingSpots->findBy([], ['name' => 'ASC']),
+            'spots' => $this->parkingSpots->findAllWithLocations(),
             'createForm' => $form->createView(),
         ]);
     }
