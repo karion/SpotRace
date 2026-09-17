@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\CompanySettingRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: CompanySettingRepository::class)]
 #[ORM\Table(name: 'company_setting')]
@@ -27,7 +28,7 @@ class CompanySetting
 
     public function __construct()
     {
-        $this->id = self::generateUuidV4();
+        $this->id = Uuid::v4()->toRfc4122();
     }
 
     public function getId(): string
@@ -69,14 +70,5 @@ class CompanySetting
         $this->value = $value;
 
         return $this;
-    }
-
-    private static function generateUuidV4(): string
-    {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0F) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3F) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 }

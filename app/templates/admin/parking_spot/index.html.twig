@@ -8,9 +8,15 @@
             <h1 class="h3">Panel administratora — miejsca postojowe</h1>
             <p><a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_user_index') }}">Przejdź do zarządzania użytkownikami</a></p>
 
+            <p><a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_location_index') }}">Zarządzaj lokalizacjami</a></p>
+
             <h2 class="h5 mt-4">Dodaj nowe miejsce</h2>
             {{ form_start(createForm) }}
                 {{ form_row(createForm.name) }}
+                {{ form_row(createForm.location) }}
+                {% if createForm.location.vars.choices is empty %}
+                    <p class="text-warning">Najpierw <a href="{{ path('app_admin_location_index') }}">dodaj lokalizację</a>, aby zapisać miejsce postojowe.</p>
+                {% endif %}
                 {{ form_row(createForm.description) }}
                 {{ form_row(createForm.save) }}
             {{ form_end(createForm) }}
@@ -24,6 +30,7 @@
                         <thead>
                             <tr>
                                 <th>Nazwa</th>
+                                <th>Lokalizacja</th>
                                 <th>Opis</th>
                                 <th>Akcje</th>
                             </tr>
@@ -32,6 +39,7 @@
                             {% for spot in spots %}
                                 <tr>
                                     <td>{{ spot.name }}</td>
+                                    <td>{{ spot.location ? spot.location.name : 'Bez lokalizacji' }}</td>
                                     <td>{{ spot.description|nl2br }}</td>
                                     <td>
                                         <div class="d-flex gap-2 flex-wrap">

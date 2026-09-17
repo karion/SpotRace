@@ -10,6 +10,7 @@
             {% if user and 'ROLE_ADMIN' in user.roles %}
                 <div class="d-flex gap-2 flex-wrap mb-4">
                     <a class="btn btn-primary btn-sm" href="{{ path('app_admin_parking_spot_index') }}">Miejsca postojowe</a>
+                    <a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_location_index') }}">Lokalizacje</a>
                     <a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_user_index') }}">Użytkownicy</a>
                 </div>
             {% endif %}

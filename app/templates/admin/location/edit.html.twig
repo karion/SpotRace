@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edycja lokalizacji{% endblock %}
+
+{% block body %}
+    <main class="card bg-body-tertiary shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h3 mb-4">Edytuj lokalizację</h1>
+            {{ form_start(editForm) }}
+                {{ form_errors(editForm) }}
+                {{ form_row(editForm.name) }}
+                {{ form_row(editForm.save) }}
+            {{ form_end(editForm) }}
+            <p class="mt-4 mb-0"><a href="{{ path('app_admin_location_index') }}">← Powrót do lokalizacji</a></p>
+        </div>
+    </main>
+{% endblock %}

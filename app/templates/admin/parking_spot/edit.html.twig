@@ -9,6 +9,10 @@
 
             {{ form_start(editForm) }}
                 {{ form_row(editForm.name) }}
+                {{ form_row(editForm.location) }}
+                {% if editForm.location.vars.choices is empty %}
+                    <p class="text-warning">Najpierw <a href="{{ path('app_admin_location_index') }}">dodaj lokalizację</a>, aby zapisać miejsce postojowe.</p>
+                {% endif %}
                 {{ form_row(editForm.description) }}
                 {{ form_row(editForm.save) }}
             {{ form_end(editForm) }}

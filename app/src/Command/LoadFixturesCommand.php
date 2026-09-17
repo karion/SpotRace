@@ -4,6 +4,7 @@ namespace App\Command;
 
 use App\Entity\Company;
 use App\Entity\CompanyParkingSpot;
+use App\Entity\ParkingLocation;
 use App\Entity\ParkingReservation;
 use App\Entity\ParkingSpot;
 use App\Entity\ParkingSpotAssignment;
@@ -53,12 +54,15 @@ class LoadFixturesCommand extends Command
         $globexUser1 = $this->user('globex.user1@spotrace.test', 'Użytkownik Globex 1', [User::ROLE_USER], $globex);
         $globexUser2 = $this->user('globex.user2@spotrace.test', 'Użytkownik Globex 2', [User::ROLE_USER], $globex);
 
-        $spotA1 = $this->parkingSpot('A-01', 'Miejsce przy wejściu A');
-        $spotA2 = $this->parkingSpot('A-02', 'Miejsce przy wejściu A');
-        $spotA3 = $this->parkingSpot('A-03', 'Miejsce dla gości Acme');
-        $spotB1 = $this->parkingSpot('B-01', 'Miejsce przy wejściu B');
-        $spotB2 = $this->parkingSpot('B-02', 'Miejsce przy wejściu B');
-        $spotB3 = $this->parkingSpot('B-03', 'Miejsce dla gości Globex');
+        $locationA = $this->location('Parking A');
+        $locationB = $this->location('Parking B');
+
+        $spotA1 = $this->parkingSpot('A-01', 'Miejsce przy wejściu A', $locationA);
+        $spotA2 = $this->parkingSpot('A-02', 'Miejsce przy wejściu A', $locationA);
+        $spotA3 = $this->parkingSpot('A-03', 'Miejsce dla gości Acme', $locationA);
+        $spotB1 = $this->parkingSpot('B-01', 'Miejsce przy wejściu B', $locationB);
+        $spotB2 = $this->parkingSpot('B-02', 'Miejsce przy wejściu B', $locationB);
+        $spotB3 = $this->parkingSpot('B-03', 'Miejsce dla gości Globex', $locationB);
 
         $this->companySpot($acme, $spotA1, $today);
         $this->companySpot($acme, $spotA2, $today);
@@ -121,7 +125,18 @@ class LoadFixturesCommand extends Command
         return $user;
     }
 
-    private function parkingSpot(string $name, string $description): ParkingSpot
+    private function location(string $name): ParkingLocation
+    {
+        $location = $this->entityManager->getRepository(ParkingLocation::class)->findOneBy(['name' => $name]);
+        if (!$location instanceof ParkingLocation) {
+            $location = (new ParkingLocation())->setName($name);
+            $this->entityManager->persist($location);
+        }
+
+        return $location;
+    }
+
+    private function parkingSpot(string $name, string $description, ParkingLocation $location): ParkingSpot
     {
         $spot = $this->entityManager->getRepository(ParkingSpot::class)->findOneBy(['name' => $name]);
         if (!$spot instanceof ParkingSpot) {
@@ -131,7 +146,8 @@ class LoadFixturesCommand extends Command
 
         return $spot
             ->setName($name)
-            ->setDescription($description);
+            ->setDescription($description)
+            ->setLocation($location);
     }
 
     private function companySpot(Company $company, ParkingSpot $spot, \DateTimeImmutable $startsAt): void

@@ -64,3 +64,17 @@ Podczas okresu przejściowego stara firma nadal widzi i wykorzystuje miejsce, al
 - Token nieprawidłowy, wygasły albo unieważniony blokuje rejestrację.
 - Rejestracja odrzuca niedozwoloną domenę i hasło niezgodne z polityką firmy.
 - Transfer udostępnia miejsce nowej firmie od wskazanej daty i nie pozwala starej firmie tworzyć danych po tej dacie.
+
+## Lokalizacje parkingowe
+
+Lokalizacje tworzą globalny słownik wspólny dla wszystkich firm. Administrator globalny zarządza nim w panelu „Lokalizacje” (`/admin/locations`): może dodać lokalizację, zmienić jej nazwę i usunąć nieużywany wpis. Nazwa jest obowiązkowa, ma najwyżej 120 znaków i musi być unikalna; otaczające spacje są usuwane.
+
+Jedno miejsce należy do najwyżej jednej lokalizacji, a lokalizacja może obejmować wiele miejsc różnych firm. Tworzenie i edycja miejsca wymagają wyboru lokalizacji. Istniejące miejsca po migracji pozostają bez lokalizacji i są oznaczone na liście administratora jako „Bez lokalizacji”; wybór trzeba uzupełnić przy ich następnej edycji. Przy pustym słowniku formularz miejsca wskazuje odnośnik do dodania lokalizacji.
+
+Lokalizacji posiadającej miejsca nie można usunąć. Najpierw należy przenieść miejsca do innej lokalizacji. Administrator firmy i użytkownik nie mogą zarządzać słownikiem. Lokalizacja nie wpływa na przynależność miejsca do firmy ani na zasady rezerwowania.
+
+Migracja `Version20260916120000` dodaje tabelę `parking_location` i opcjonalne powiązanie `parking_spot.location_id`, zachowując istniejące rezerwacje i przypisania. Dane demonstracyjne zawierają lokalizacje „Parking A” i „Parking B”. Obsługa pojazdów, tablic rejestracyjnych i raportu PDF stanowi oddzielne zadanie korzystające z tego słownika.
+
+Po aktualizacji kodu należy uruchomić `make migrate`. Testy HTTP lokalizacji korzystają z tymczasowej bazy SQLite (wymagane rozszerzenie `pdo_sqlite`), niezależnej od bazy aplikacji. Konfiguracja testowa wyłącza pasek profilera, którego trasy są dostępne wyłącznie w środowisku developerskim.
+
+Zrzuty ekranów na danych demonstracyjnych: [słownik lokalizacji](screenshots/locations/list.png), [miejsca z lokalizacjami](screenshots/locations/spots.png).

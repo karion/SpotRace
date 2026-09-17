@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\CompanyRegistrationTokenRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: CompanyRegistrationTokenRepository::class)]
 #[ORM\Table(name: 'company_registration_token')]
@@ -33,7 +34,7 @@ class CompanyRegistrationToken
 
     public function __construct()
     {
-        $this->id = self::generateUuidV4();
+        $this->id = Uuid::v4()->toRfc4122();
         $this->createdAt = new \DateTimeImmutable();
         $this->token = bin2hex(random_bytes(32));
         $this->expiresAt = new \DateTimeImmutable('+48 hours');
@@ -102,14 +103,5 @@ class CompanyRegistrationToken
         $now ??= new \DateTimeImmutable();
 
         return null === $this->revokedAt && $this->expiresAt >= $now && $this->company->isActive();
-    }
-
-    private static function generateUuidV4(): string
-    {
-        $bytes = random_bytes(16);
-        $bytes[6] = chr((ord($bytes[6]) & 0x0F) | 0x40);
-        $bytes[8] = chr((ord($bytes[8]) & 0x3F) | 0x80);
-
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($bytes), 4));
     }
 }
