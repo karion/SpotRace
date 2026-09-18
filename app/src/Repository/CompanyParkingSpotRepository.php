@@ -51,8 +51,9 @@ class CompanyParkingSpotRepository extends ServiceEntityRepository
     public function findActiveForCompanyInRange(Company $company, \DateTimeImmutable $startsAt, \DateTimeImmutable $endsAt): array
     {
         return $this->createQueryBuilder('cps')
-            ->addSelect('s')
+            ->addSelect('s', 'l')
             ->join('cps.parkingSpot', 's')
+            ->leftJoin('s.location', 'l')
             ->andWhere('cps.company = :company')
             ->andWhere('cps.startsAt <= :endsAt')
             ->andWhere('cps.endsAt IS NULL OR cps.endsAt >= :startsAt')

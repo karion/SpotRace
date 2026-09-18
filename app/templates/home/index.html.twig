@@ -5,105 +5,120 @@
 {% block body %}
     <main class="card bg-body-tertiary shadow-sm">
         <div class="card-body p-4 p-md-5">
-            <h1 class="h3">Witaj, {{ user ? user.name : 'gościu' }}!</h1>
-            <p class="text-body-secondary">Zarządzaj rezerwacjami miejsc parkingowych.</p>
-            {% if user and 'ROLE_ADMIN' in user.roles %}
+            <h1 class="h3">Witaj, {{ user.name }}!</h1>
+            <p class="text-body-secondary">Wybierz dzień i miejsce. Dane pojazdu podasz w kolejnym kroku.</p>
+            {% if 'ROLE_ADMIN' in user.roles %}
                 <div class="d-flex gap-2 flex-wrap mb-4">
                     <a class="btn btn-primary btn-sm" href="{{ path('app_admin_parking_spot_index') }}">Miejsca postojowe</a>
                     <a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_location_index') }}">Lokalizacje</a>
                     <a class="btn btn-outline-light btn-sm" href="{{ path('app_admin_user_index') }}">Użytkownicy</a>
                 </div>
             {% endif %}
-            {% if user and 'ROLE_COMPANY_ADMIN' in user.roles %}
+            {% if 'ROLE_COMPANY_ADMIN' in user.roles %}
                 <div class="d-flex gap-2 flex-wrap mb-4">
                     <a class="btn btn-primary btn-sm" href="{{ path('app_company_parking_spot_index') }}">Miejsca firmy</a>
                     <a class="btn btn-outline-light btn-sm" href="{{ path('app_company_user_index') }}">Użytkownicy firmy</a>
                     <a class="btn btn-outline-light btn-sm" href="{{ path('app_company_settings') }}">Ustawienia firmy</a>
                 </div>
             {% endif %}
-            {% if user %}
-                <div class="d-flex gap-2 flex-wrap mb-4">
-                    <a class="btn btn-outline-light btn-sm" href="{{ path('app_vehicle_index') }}">Moje pojazdy</a>
-                </div>
-            {% endif %}
+            <div class="d-flex gap-2 flex-wrap mb-4"><a class="btn btn-outline-light btn-sm" href="{{ path('app_vehicle_index') }}">Moje pojazdy</a></div>
 
-            <h2 class="h4 mb-3">Rezerwacje i przypisane miejsca (podział na dni)</h2>
-            <div class="vstack gap-4">
+            <h2 class="h4 mb-3">Miejsca parkingowe</h2>
+            <div class="vstack gap-3">
                 {% for day in days %}
+                    {% set dayId = day.date|date('Ymd') %}
                     <section class="border border-secondary-subtle rounded p-3">
-                        <h3 class="h5">{{ day.displayDate }}</h3>
-
-                        {% if day.assignment %}
-                            <h4 class="h6 mt-3">Twoje przypisane miejsce</h4>
-                            <div class="d-flex justify-content-between gap-3 align-items-center flex-wrap mb-3">
-                                <p class="mb-0"><strong>{{ day.assignment.parkingSpot.name }}</strong> ({{ day.assignment.parkingSpot.description }})</p>
-
-                                {% if day.canManageAssigned %}
-                                    <div class="d-flex gap-2 align-items-center flex-wrap">
-                                        {{ form_start(day.confirmForm) }}
-                                            {{ form_widget(day.confirmForm) }}
-                                        {{ form_end(day.confirmForm) }}
-
-                                        <a class="btn btn-outline-light btn-sm" href="{{ path('app_reservation_delegate_assigned', { date: day.date|date('Y-m-d') }) }}">Przekaż</a>
-                                    </div>
-                                {% elseif day.assignedSpotReserved %}
-                                    <span class="badge text-bg-success">Miejsce już potwierdzone</span>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-
+                        <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                            <h3 class="h5 mb-0">{{ day.displayDate }}</h3>
+                            {% if day.userReservation %}<span class="badge text-bg-info">Masz rezerwację</span>{% endif %}
+                        </div>
                         {% if day.userReservation %}
-                            <div class="alert alert-info py-2 px-3 mb-3">
-                                <div class="d-flex gap-2 justify-content-between align-items-center flex-wrap">
-                                    <span>
-                                        Masz już rezerwację: <strong>{{ day.userReservation.parkingSpot.name }}</strong>
-                                        ({{ day.userReservation.parkingSpot.description }}).
-                                        {% if day.userReservation.licensePlate %}<span class="ms-1">Rejestracja: <strong>{{ day.userReservation.licensePlate }}</strong></span>{% endif %}
-                                    </span>
-                                    {% if day.canReleaseReservation %}
-                                        {{ form_start(day.releaseForm) }}
-                                            {{ form_widget(day.releaseForm) }}
-                                        {{ form_end(day.releaseForm) }}
-                                    {% endif %}
-                                </div>
+                            <div class="alert alert-info py-2 px-3 d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                                <span>{{ day.userReservation.parkingSpot.name }}{% if day.userReservation.licensePlate %} · {{ day.userReservation.licensePlate }}{% endif %}</span>
+                                {% if day.canReleaseReservation %}{{ form_start(day.releaseForm) }}{{ form_widget(day.releaseForm) }}{{ form_end(day.releaseForm) }}{% endif %}
                             </div>
                         {% endif %}
-
-                        {% if day.isWithinFreeWindow and day.availableSpots is empty %}
-                            <p class="mb-0">Brak wolnych miejsc.</p>
-                        {% elseif day.isWithinFreeWindow %}
-                            <div class="table-responsive">
-                                <table class="table table-dark table-hover align-middle mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Miejsce</th>
-                                            <th>Opis</th>
-                                            <th>Akcja</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for spot in day.availableSpots %}
-                                            <tr>
-                                                <td>{{ spot.name }}</td>
-                                                <td>{{ spot.description }}</td>
-                                                <td>
-                                                    {% if day.canReserveFree %}
-                                                        {{ form_start(day.freeForms[spot.id]) }}
-                                                            {{ form_widget(day.freeForms[spot.id]) }}
-                                                        {{ form_end(day.freeForms[spot.id]) }}
+                        {% if day.isWithinFreeWindow or day.assignment %}
+                            {% if day.spots is empty %}
+                                <p class="text-body-secondary mb-0">Brak wolnych miejsc.</p>
+                            {% else %}
+                                {% for location in day.locations %}
+                                    <div class="mb-3 last-child-mb-0">
+                                        <h4 class="h6 text-body-secondary mb-2">{{ location.name }}</h4>
+                                        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-2">
+                                            {% for spot in location.spots %}
+                                                {% set status = day.spotStatuses[spot.id]|default('available') %}
+                                                {% set isAssigned = 'assigned_own' == status %}
+                                                <div class="col">
+                                                    {% if isAssigned %}
+                                                        <div class="border border-primary rounded p-2 h-100 bg-primary-subtle text-body d-flex justify-content-between align-items-center gap-2">
+                                                            <span><strong>{{ spot.name }}</strong><small class="d-block">{{ spot.description }} · przypisane</small></span>
+                                                            {% if day.canManageAssigned %}
+                                                                <div class="d-flex gap-1 flex-wrap justify-content-end"><button class="btn btn-primary btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#vehicle-modal-{{ dayId }}" data-form-target="confirm-form-{{ dayId }}">Potwierdź</button><a class="btn btn-outline-primary btn-sm" href="{{ path('app_reservation_delegate_assigned', { date: day.date|date('Y-m-d') }) }}">Przekaż</a></div>
+                                                            {% elseif day.assignedSpotReserved %}<span class="badge text-bg-success">Potwierdzone</span>{% endif %}
+                                                        </div>
+                                                    {% elseif 'reserved' == status %}
+                                                        <div class="border border-danger-subtle rounded p-2 h-100 text-body-secondary d-flex justify-content-between align-items-center gap-2"><span><strong>{{ spot.name }}</strong><small class="d-block">{{ spot.description }}</small></span><span class="badge text-bg-danger">Zarezerwowane</span></div>
+                                                    {% elseif 'assigned' == status %}
+                                                        <div class="border border-warning-subtle rounded p-2 h-100 text-body-secondary d-flex justify-content-between align-items-center gap-2"><span><strong>{{ spot.name }}</strong><small class="d-block">{{ spot.description }}</small></span><span class="badge text-bg-warning">Przypisane</span></div>
+                                                    {% elseif day.canReserveFree and day.freeForm is defined %}
+                                                        <button class="btn {{ 'assigned_available' == status ? 'btn-outline-warning' : 'btn-outline-light' }} w-100 text-start d-flex justify-content-between align-items-center" type="button" data-bs-toggle="modal" data-bs-target="#vehicle-modal-{{ dayId }}" data-form-target="free-form-{{ dayId }}" data-spot-id="{{ spot.id }}"><span><strong>{{ spot.name }}</strong><small class="d-block text-body-secondary">{{ spot.description }}{% if 'assigned_available' == status %} · przypisane, dostępne{% endif %}</small></span><span aria-hidden="true">→</span></button>
                                                     {% else %}
-                                                        <button class="btn btn-secondary btn-sm" type="button" disabled>Masz już rezerwację</button>
+                                                        <div class="border border-secondary-subtle rounded p-2 h-100 text-body-secondary"><strong>{{ spot.name }}</strong><small class="d-block">{{ spot.description }}</small></div>
                                                     {% endif %}
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
                         {% endif %}
                     </section>
+                    {% if day.freeForm is defined or day.confirmForm is defined %}
+                        <div class="modal fade" id="vehicle-modal-{{ dayId }}" tabindex="-1" aria-labelledby="vehicle-modal-label-{{ dayId }}" aria-hidden="true" data-reservation-modal>
+                            <div class="modal-dialog"><div class="modal-content bg-body-tertiary">
+                                <div class="modal-header"><h2 class="modal-title h5" id="vehicle-modal-label-{{ dayId }}">Wybierz pojazd</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button></div>
+                                <div class="modal-body">
+                                    <p class="text-body-secondary">Wybierz zapisany pojazd albo „Inny”, aby wpisać nową rejestrację.</p>
+                                    {% if day.freeForm is defined %}
+                                        {{ form_start(day.freeForm, { attr: { id: 'free-form-' ~ dayId, class: 'reservation-form d-none' } }) }}
+                                            {{ form_errors(day.freeForm) }}{{ form_widget(day.freeForm.date) }}{{ form_widget(day.freeForm.spot_id) }}
+                                            {{ form_row(day.freeForm.vehicle_id, { attr: { 'data-vehicle-choice': true } }) }}
+                                            <div class="d-none" data-new-vehicle-field>{{ form_row(day.freeForm.license_plate) }}</div>{{ form_row(day.freeForm.save) }}
+                                        {{ form_end(day.freeForm) }}
+                                    {% endif %}
+                                    {% if day.confirmForm is defined %}
+                                        {{ form_start(day.confirmForm, { attr: { id: 'confirm-form-' ~ dayId, class: 'reservation-form d-none' } }) }}
+                                            {{ form_errors(day.confirmForm) }}{{ form_widget(day.confirmForm.date) }}
+                                            {{ form_row(day.confirmForm.vehicle_id, { attr: { 'data-vehicle-choice': true } }) }}
+                                            <div class="d-none" data-new-vehicle-field>{{ form_row(day.confirmForm.license_plate) }}</div>{{ form_row(day.confirmForm.save) }}
+                                        {{ form_end(day.confirmForm) }}
+                                    {% endif %}
+                                </div>
+                            </div></div>
+                        </div>
+                    {% endif %}
                 {% endfor %}
             </div>
         </div>
     </main>
+    <script>
+        document.querySelectorAll('[data-reservation-modal]').forEach(function (modal) {
+            modal.addEventListener('show.bs.modal', function (event) {
+                const trigger = event.relatedTarget;
+                const targetId = trigger.dataset.formTarget;
+                modal.querySelectorAll('.reservation-form').forEach(function (form) { form.classList.toggle('d-none', form.id !== targetId); });
+                if (trigger.dataset.spotId) { const spot = modal.querySelector('#' + targetId + '_spot_id'); if (spot) { spot.value = trigger.dataset.spotId; } }
+            });
+            modal.querySelectorAll('[data-vehicle-choice]').forEach(function (choice) {
+                choice.addEventListener('change', function () {
+                    const field = choice.closest('form').querySelector('[data-new-vehicle-field]');
+                    const input = field.querySelector('input');
+                    const isOther = choice.value === '__other__';
+                    field.classList.toggle('d-none', !isOther); input.required = isOther;
+                    if (!isOther) { input.value = ''; }
+                });
+            });
+        });
+    </script>
 {% endblock %}

@@ -46,7 +46,7 @@ class ReservationManager
         $this->assertSpotInCompany($spot, $company, $date);
         $this->assertAvailable($spot, $user, $date);
         $assignment = $this->assignments->findUserAssignmentForDate($user, $date);
-        if ($assignment && $assignment->getParkingSpot()->getId() === $spot->getId()) {
+        if ($assignment && $assignment->getParkingSpot()->getId() === $spot->getId() && $this->policy->isAssignmentLockedForOthers($date, $company)) {
             throw new \DomainException('Dla przypisanego miejsca użyj potwierdzenia lub przekazania miejsca.');
         }
         foreach ($this->assignments->findActiveForDate($date) as $active) {

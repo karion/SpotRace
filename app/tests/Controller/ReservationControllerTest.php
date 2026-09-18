@@ -6,6 +6,7 @@ use App\Entity\AppSetting;
 use App\Entity\Company;
 use App\Entity\CompanyParkingSpot;
 use App\Entity\CompanySetting;
+use App\Entity\ParkingLocation;
 use App\Entity\ParkingReservation;
 use App\Entity\ParkingSpot;
 use App\Entity\ParkingSpotAssignment;
@@ -176,7 +177,8 @@ class ReservationControllerTest extends WebTestCase
     {
         $own = $this->vehicle($this->user, 'OWN123');
         $other = $this->vehicle($this->recipient, 'OTHER123');
-        $values = $this->form('/reservations/free')->getPhpValues();
+        $freeForm = $this->form('/reservations/free');
+        $values = $freeForm->getPhpValues();
         foreach ([['vehicle_id' => $own->getId(), 'license_plate' => 'NEW123'], ['vehicle_id' => $other->getId()]] as $changes) {
             $this->client->request('POST', '/reservations/free', array_replace($values, $changes));
             self::assertResponseStatusCodeSame(422);
@@ -218,10 +220,11 @@ class ReservationControllerTest extends WebTestCase
 
     public function testOccupiedSpotAndExistingDailyReservationAreRechecked(): void
     {
-        $values = $this->form('/reservations/free')->getPhpValues();
+        $freeForm = $this->form('/reservations/free');
+        $values = $freeForm->getPhpValues();
         $second = $this->newSpot('A-2', $this->company);
         $this->em()->flush();
-        $this->client->submit($this->client->getCrawler()->selectButton('Rezerwuj')->form(), ['license_plate' => 'OWN123']);
+        $this->client->submit($freeForm, ['license_plate' => 'OWN123']);
         self::assertResponseRedirects();
         $this->client->request('POST', '/reservations/free', array_replace($values, ['spot_id' => $second->getId(), 'license_plate' => 'NEW123']));
         self::assertResponseStatusCodeSame(422);
@@ -231,6 +234,9 @@ class ReservationControllerTest extends WebTestCase
         $this->client->request('POST', '/reservations/free', array_replace($values, ['license_plate' => 'OTHER123']));
         self::assertResponseStatusCodeSame(422);
         self::assertSelectorTextContains('body', 'miejsce jest już zarezerwowane');
+        $this->client->request('GET', '/');
+        self::assertSelectorExists('.text-bg-danger');
+        self::assertSelectorTextContains('.text-bg-danger', 'Zarezerwowane');
         self::assertSame(1, $this->em()->getRepository(ParkingReservation::class)->count([]));
         self::assertSame(1, $this->em()->getRepository(Vehicle::class)->count([]));
     }
@@ -277,6 +283,9 @@ class ReservationControllerTest extends WebTestCase
         $this->client->request('POST', '/reservations/free', $values);
         self::assertResponseStatusCodeSame(422);
         self::assertSelectorTextContains('body', 'użyj potwierdzenia');
+        $this->client->request('GET', '/');
+        self::assertSelectorExists('.bg-primary-subtle');
+        self::assertSelectorTextContains('.bg-primary-subtle', 'przypisane');
         $this->client->loginUser($this->recipient);
         $this->client->request('POST', '/reservations/free', $values);
         self::assertResponseStatusCodeSame(422);
@@ -299,6 +308,21 @@ class ReservationControllerTest extends WebTestCase
         $this->client->submit($this->form('/reservations/free'));
         self::assertResponseRedirects();
         self::assertSame($this->recipient->getId(), $this->reservation()->getReservedForUser()->getId());
+    }
+
+    public function testAssignedOwnerCanReserveSpotAsFreeAfterCutoff(): void
+    {
+        $this->freezeTime('2026-09-18 07:00:00');
+        $this->assign($this->user);
+        $this->client->request('GET', '/');
+        self::assertSelectorNotExists('form[action="/reservations/confirm-assigned"] input[value="2026-09-18"]');
+        self::assertSelectorExists('form[action="/reservations/free"] input[value="2026-09-18"]');
+
+        $this->client->submit($this->form('/reservations/free'));
+
+        self::assertResponseRedirects();
+        self::assertSame('free', $this->reservation()->getType());
+        self::assertSame($this->user->getId(), $this->reservation()->getReservedForUser()->getId());
     }
 
     public function testLastAssignedDayIsAcceptedAndNextDayIsRejected(): void
@@ -370,8 +394,26 @@ class ReservationControllerTest extends WebTestCase
         }
         $this->em()->flush();
         $this->form('/reservations/free', '2026-09-21');
+        self::assertSelectorExists('#free-form-20260918_spot_id');
+        self::assertSelectorExists('[data-form-target="free-form-20260918"]');
         $ids = $this->client->getCrawler()->filter('input[id], select[id], button[id]')->extract(['id']);
         self::assertSame($ids, array_values(array_unique($ids)));
+    }
+
+    public function testCalendarGroupsSpotsByLocation(): void
+    {
+        $locationA = $this->location('Biurowiec A');
+        $locationB = $this->location('Biurowiec B');
+        $this->spot->setLocation($locationA);
+        $second = $this->newSpot('A-2', $this->company);
+        $second->setLocation($locationB);
+        $this->em()->flush();
+
+        $this->client->request('GET', '/');
+        self::assertSelectorTextContains('h4', 'Biurowiec A');
+        self::assertSelectorTextContains('body', 'A-1');
+        self::assertSelectorTextContains('body', 'A-2');
+        self::assertSelectorTextContains('body', 'Biurowiec B');
     }
 
     public function testEveryMutationRequiresPostCsrfAndAuthentication(): void
@@ -447,12 +489,29 @@ class ReservationControllerTest extends WebTestCase
         return $vehicle;
     }
 
+    private function location(string $name): ParkingLocation
+    {
+        $location = (new ParkingLocation())->setName($name);
+        $this->em()->persist($location);
+        $this->em()->flush();
+
+        return $location;
+    }
+
     private function form(string $action, string $date = '2026-09-18'): Form
     {
         $crawler = $this->client->request('GET', '/');
         self::assertResponseIsSuccessful();
 
-        return $crawler->filter('form[action="'.$action.'"]')->reduce(fn ($node) => $node->filter('input[name="date"]')->attr('value') === $date)->first()->form();
+        $form = $crawler->filter('form[action="'.$action.'"]')->reduce(fn ($node) => $node->filter('input[name="date"]')->attr('value') === $date)->first()->form();
+        if ('/reservations/free' === $action) {
+            $spot = $crawler->filter('[data-form-target="free-form-'.str_replace('-', '', $date).'"]')->first();
+            if ($spot->count()) {
+                $form->setValues(['spot_id' => $spot->attr('data-spot-id')]);
+            }
+        }
+
+        return $form;
     }
 
     private function reservation(string $date = '2026-09-18'): ParkingReservation

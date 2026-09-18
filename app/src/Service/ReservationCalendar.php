@@ -85,18 +85,52 @@ class ReservationCalendar
             }
 
             $allSpots = array_values($companySpotsByDate[$dateKey] ?? []);
+            if ($assignment && !array_key_exists($assignment->getParkingSpot()->getId(), $companySpotsByDate[$dateKey] ?? [])) {
+                $allSpots[] = $assignment->getParkingSpot();
+            }
 
             if (!$isWithinFreeWindow && !$assignment && !$userReservation) {
                 continue;
             }
 
             $availableSpots = [];
-            if ($isWithinFreeWindow) {
-                $takenSpotIds = [];
-                foreach ($reservationsByDate[$dateKey] ?? [] as $reservation) {
-                    $takenSpotIds[$reservation->getParkingSpot()->getId()] = true;
-                }
+            $takenSpotIds = [];
+            foreach ($reservationsByDate[$dateKey] ?? [] as $reservation) {
+                $takenSpotIds[$reservation->getParkingSpot()->getId()] = true;
+            }
 
+            $assignedSpotIds = [];
+            foreach ($activeAssignmentsByDate[$dateKey] ?? [] as $activeAssignment) {
+                $assignedSpotIds[$activeAssignment->getParkingSpot()->getId()] = true;
+            }
+
+            $spotStatuses = [];
+            foreach ($allSpots as $spot) {
+                $spotId = $spot->getId();
+                if ($assignment?->getParkingSpot()->getId() === $spotId) {
+                    $spotStatuses[$spotId] = $this->policy->isAssignmentLockedForOthers($date, $company) ? 'assigned_own' : 'assigned_available';
+                } elseif (isset($takenSpotIds[$spotId])) {
+                    $spotStatuses[$spotId] = 'reserved';
+                } elseif (isset($assignedSpotIds[$spotId])) {
+                    $spotStatuses[$spotId] = $this->policy->isAssignmentLockedForOthers($date, $company) ? 'assigned' : 'assigned_available';
+                } else {
+                    $spotStatuses[$spotId] = 'available';
+                }
+            }
+
+            $locationsByKey = [];
+            foreach ($allSpots as $spot) {
+                $location = $spot->getLocation();
+                $locationKey = $location?->getId() ?? 'without-location';
+                $locationsByKey[$locationKey] ??= [
+                    'name' => $location?->getName() ?? 'Bez lokalizacji',
+                    'spots' => [],
+                ];
+                $locationsByKey[$locationKey]['spots'][] = $spot;
+            }
+            uasort($locationsByKey, static fn (array $left, array $right): int => strnatcasecmp($left['name'], $right['name']));
+
+            if ($isWithinFreeWindow) {
                 $lockedSpotIds = [];
                 foreach ($activeAssignmentsByDate[$dateKey] ?? [] as $activeAssignment) {
                     $spotId = $activeAssignment->getParkingSpot()->getId();
@@ -106,7 +140,8 @@ class ReservationCalendar
                 }
 
                 foreach ($allSpots as $spot) {
-                    if (isset($takenSpotIds[$spot->getId()]) || isset($lockedSpotIds[$spot->getId()]) || $assignment?->getParkingSpot()->getId() === $spot->getId()) {
+                    $isOwnAssignedSpot = $assignment?->getParkingSpot()->getId() === $spot->getId();
+                    if (isset($takenSpotIds[$spot->getId()]) || isset($lockedSpotIds[$spot->getId()]) || ($isOwnAssignedSpot && $this->policy->isAssignmentLockedForOthers($date, $company))) {
                         continue;
                     }
                     $availableSpots[] = $spot;
@@ -124,6 +159,9 @@ class ReservationCalendar
                 'canReserveFree' => $isWithinFreeWindow && !$userReservation,
                 'canReleaseReservation' => $userReservation && $this->policy->canReleaseReservation($date, $company),
                 'availableSpots' => $availableSpots,
+                'spots' => $allSpots,
+                'locations' => array_values($locationsByKey),
+                'spotStatuses' => $spotStatuses,
             ];
         }
 

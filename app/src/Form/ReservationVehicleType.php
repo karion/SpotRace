@@ -30,7 +30,7 @@ class ReservationVehicleType extends AbstractType
                 'property_path' => 'vehicleId',
                 'label' => 'Zapisany pojazd',
                 'choices' => $options['vehicle_choices'],
-                'placeholder' => 'Wybierz pojazd lub wpisz rejestrację',
+                'placeholder' => false,
                 'required' => false,
                 'invalid_message' => 'Nieprawidłowy pojazd.',
             ])
@@ -53,7 +53,13 @@ class ReservationVehicleType extends AbstractType
                 return;
             }
             $hasPlate = '' !== trim($data->licensePlate ?? '');
-            if ($data->vehicleId && $hasPlate) {
+            $otherVehicle = '__other__' === $data->vehicleId;
+            if ($otherVehicle) {
+                $data->vehicleId = null;
+            }
+            if ($otherVehicle && !$hasPlate) {
+                $event->getForm()->addError(new \Symfony\Component\Form\FormError('Podaj numer nowego pojazdu.'));
+            } elseif ($data->vehicleId && $hasPlate) {
                 $event->getForm()->addError(new \Symfony\Component\Form\FormError('Wybierz zapisany pojazd albo wpisz nową rejestrację.'));
             } elseif ($options['plate_required'] && !$data->vehicleId && !$hasPlate) {
                 $event->getForm()->addError(new \Symfony\Component\Form\FormError('Podaj numer rejestracyjny przed zapisaniem rezerwacji.'));

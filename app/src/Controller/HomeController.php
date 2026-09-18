@@ -25,18 +25,13 @@ class HomeController extends AbstractController
             $data = new ReservationData();
             $data->date = $day['date']->format('Y-m-d');
             if ($day['canManageAssigned']) {
-                $day['confirmForm'] = $forms->view($forms->create(ConfirmReservationType::class, $user, clone $data, $vehicles), 'confirm_'.$data->date);
+                $day['confirmForm'] = $forms->view($forms->create(ConfirmReservationType::class, $user, clone $data, $vehicles), 'confirm-form-'.str_replace('-', '', $data->date));
             }
             if ($day['canReleaseReservation']) {
                 $day['releaseForm'] = $forms->view($forms->create(ReleaseReservationType::class, $user, clone $data), 'release_'.$data->date);
             }
-            $day['freeForms'] = [];
-            if ($day['canReserveFree']) {
-                foreach ($day['availableSpots'] as $spot) {
-                    $spotData = clone $data;
-                    $spotData->spotId = $spot->getId();
-                    $day['freeForms'][$spot->getId()] = $forms->view($forms->create(FreeReservationType::class, $user, $spotData, $vehicles), 'free_'.$data->date.'_'.$spot->getId());
-                }
+            if ($day['canReserveFree'] && [] !== $day['availableSpots']) {
+                $day['freeForm'] = $forms->view($forms->create(FreeReservationType::class, $user, clone $data, $vehicles), 'free-form-'.str_replace('-', '', $data->date));
             }
         }
         unset($day);

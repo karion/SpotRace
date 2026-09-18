@@ -57,7 +57,7 @@ class ReservationFormFactory
     /** @return array<string, string> */
     public function vehicleChoices(User $actor, bool $delegating = false): array
     {
-        $choices = [];
+        $choices = ['Bez rejestracji' => ''];
         $vehicles = $delegating
             ? ($actor->getCompany() ? $this->vehicles->findByCompany($actor->getCompany()) : [])
             : $this->vehicles->findByOwner($actor);
@@ -68,6 +68,7 @@ class ReservationFormFactory
             }
             $choices[$label] = $vehicle->getId();
         }
+        $choices['Inny'] = '__other__';
 
         return $choices;
     }

@@ -12,6 +12,7 @@
    - potwierdzić swoje miejsce (dla dziś i w skonfigurowanym oknie, domyślnie do 7 dni w przód),
    - przekazać swoje miejsce innej osobie z firmy (w tym samym oknie).
 6. Dla dnia bieżącego przypisane miejsce jest zablokowane dla innych użytkowników tej samej firmy do skonfigurowanej godziny granicznej, domyślnie 07:00.
+   Po tej godzinie przypisana osoba traci pierwszeństwo, ale może zarezerwować to miejsce jak każde inne wolne miejsce.
 7. Zwykły użytkownik może rezerwować wolne miejsca swojej firmy na dowolny dzień w oknie skonfigurowanym globalnie albo nadpisanym dla firmy.
 8. Jedna osoba może mieć maksymalnie jedną rezerwację dziennie.
 9. Nie można zarezerwować miejsca już zarezerwowanego.
@@ -97,7 +98,8 @@ Rezerwacja przechowuje niezależny tekstowy snapshot tablicy (`licensePlate`, op
 
 ## Obsługa formularzy i podział odpowiedzialności
 
-- `HomeController` wyświetla kalendarz przygotowany przez `ReservationCalendar`. Kalendarz obejmuje oba skonfigurowane okna rezerwacji. Własne przypisane miejsce obsługuje się przez potwierdzenie lub przekazanie.
+- `HomeController` wyświetla kalendarz przygotowany przez `ReservationCalendar`. Kalendarz obejmuje oba skonfigurowane okna rezerwacji. Własne przypisane miejsce obsługuje się przez potwierdzenie lub przekazanie przed godziną graniczną, a po jej upływie przez zwykłą rezerwację wolnego miejsca.
+- Kalendarz pokazuje dni, a w każdym dniu miejsca pogrupowane według lokalizacji. Po wybraniu miejsca otwiera się modal z listą zapisanych pojazdów; opcja „Inny” odsłania dopiero pole nowej rejestracji.
 - `ReservationController` obsługuje formularze Symfony dla rezerwacji wolnego miejsca, potwierdzania, przekazywania i zwalniania. Adresy i metody HTTP pozostają bez zmian.
 - Formularze sprawdzają CSRF, poprawność daty, wybór użytkownika i pojazdu oraz dane rejestracji. Przy błędzie odpowiedź ma status 422 i zawiera formularz z zachowanymi danymi i komunikatami. Nieprawidłową ukrytą datę lub miejsce należy wybrać ponownie z kalendarza.
 - `ReservationManager` ponownie sprawdza reguły przy zapisie: firmę miejsca w danym dniu, przypisanie, okna czasowe, zajętość miejsca, rezerwację odbiorcy i własność pojazdu. Dotyczy to również formularzy otwartych przed zmianą dostępności lub transferem miejsca.
