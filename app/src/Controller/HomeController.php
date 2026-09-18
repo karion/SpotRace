@@ -10,7 +10,11 @@ use App\Repository\ParkingReservationRepository;
 use App\Repository\ParkingSpotAssignmentRepository;
 use App\Repository\ParkingSpotRepository;
 use App\Repository\UserRepository;
+use App\Repository\VehicleRepository;
 use App\Service\ReservationPolicy;
+use App\Service\SettingKeys;
+use App\Service\SettingsResolver;
+use App\Service\VehicleManager;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -27,6 +31,9 @@ class HomeController extends AbstractController
         private readonly ParkingSpotAssignmentRepository $assignments,
         private readonly ParkingReservationRepository $reservations,
         private readonly UserRepository $users,
+        private readonly VehicleRepository $vehicles,
+        private readonly VehicleManager $vehicleManager,
+        private readonly SettingsResolver $settings,
         private readonly EntityManagerInterface $entityManager,
         private readonly ReservationPolicy $policy,
     ) {
@@ -145,6 +152,7 @@ class HomeController extends AbstractController
         return $this->render('home/index.html.twig', [
             'user' => $user,
             'days' => $days,
+            'vehicles' => $this->vehicles->findByOwner($user),
         ]);
     }
 
@@ -211,6 +219,7 @@ class HomeController extends AbstractController
             'assignment' => $assignment,
             'users' => $user->getCompany() ? $this->users->findByCompany($user->getCompany()) : [],
             'currentUser' => $user,
+            'vehiclesByUser' => $this->vehiclesByUser($user),
         ]);
     }
 
@@ -228,6 +237,12 @@ class HomeController extends AbstractController
 
         $date = $this->mustParseDate((string) $request->request->get('date'));
         $this->validateCsrf($request, 'reserve-free-'.$date->format('Y-m-d'));
+
+        if (!$this->policy->isWithinFreeWindow($date, $company)) {
+            $this->addFlash('error', 'Wybrany dzień jest poza oknem rezerwowania wolnych miejsc.');
+
+            return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
+        }
 
         if (!$this->ensureUserHasNoReservation($user, $date)) {
             $this->addFlash('error', 'Masz już rezerwację w tym dniu.');
@@ -264,11 +279,20 @@ class HomeController extends AbstractController
             }
         }
 
+        try {
+            $licensePlate = $this->licensePlateFromRequest($request, $user);
+        } catch (\DomainException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+
+            return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
+        }
+
         $reservation = (new ParkingReservation())
             ->setParkingSpot($spot)
             ->setReservedForUser($user)
             ->setCreatedByUser($user)
             ->setReservationDate($date)
+            ->setLicensePlate($licensePlate)
             ->setType('free');
 
         $this->entityManager->persist($reservation);
@@ -325,11 +349,20 @@ class HomeController extends AbstractController
             return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
         }
 
+        try {
+            $licensePlate = $this->licensePlateFromRequest($request, $user);
+        } catch (\DomainException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+
+            return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
+        }
+
         $reservation = (new ParkingReservation())
             ->setParkingSpot($assignment->getParkingSpot())
             ->setReservedForUser($user)
             ->setCreatedByUser($user)
             ->setReservationDate($date)
+            ->setLicensePlate($licensePlate)
             ->setType('assigned_confirmed');
 
         $this->entityManager->persist($reservation);
@@ -393,11 +426,20 @@ class HomeController extends AbstractController
             return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
         }
 
+        try {
+            $licensePlate = $this->licensePlateFromRequest($request, $targetUser, 'target_vehicle_id', 'target_license_plate');
+        } catch (\DomainException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+
+            return $this->redirectToRoute('app_home', ['date' => $date->format('Y-m-d')]);
+        }
+
         $reservation = (new ParkingReservation())
             ->setParkingSpot($assignment->getParkingSpot())
             ->setReservedForUser($targetUser)
             ->setCreatedByUser($user)
             ->setReservationDate($date)
+            ->setLicensePlate($licensePlate)
             ->setType('assigned_delegated');
 
         $this->entityManager->persist($reservation);
@@ -465,6 +507,31 @@ class HomeController extends AbstractController
     private function ensureUserHasNoReservation(User $user, \DateTimeImmutable $date): bool
     {
         return null === $this->reservations->findUserReservationForDate($user, $date);
+    }
+
+    /** @return array<string, array<int, \App\Entity\Vehicle>> */
+    private function vehiclesByUser(User $currentUser): array
+    {
+        $vehicles = [];
+        foreach ($currentUser->getCompany() ? $this->vehicles->findByCompany($currentUser->getCompany()) : [] as $vehicle) {
+            $vehicles[$vehicle->getOwner()->getId()][] = $vehicle;
+        }
+
+        return $vehicles;
+    }
+
+    private function licensePlateFromRequest(Request $request, User $owner, string $vehicleField = 'vehicle_id', string $plateField = 'license_plate'): ?string
+    {
+        $licensePlate = $this->vehicleManager->resolveLicensePlate(
+            $owner,
+            (string) $request->request->get($vehicleField),
+            (string) $request->request->get($plateField),
+        );
+        if (null === $licensePlate && $this->settings->bool(SettingKeys::RESERVATION_REQUIRE_LICENSE_PLATE, $owner->getCompany())) {
+            throw new \DomainException('Podaj numer rejestracyjny przed zapisaniem rezerwacji.');
+        }
+
+        return $licensePlate;
     }
 
     private function mustParseDate(string $date): \DateTimeImmutable

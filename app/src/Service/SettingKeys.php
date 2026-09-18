@@ -14,6 +14,7 @@ final class SettingKeys
     public const RESERVATION_CONFIRMATION_DEADLINE_HOUR = 'reservation.confirmation_deadline_hour';
     public const RESERVATION_ASSIGNED_WINDOW_DAYS = 'reservation.assigned_window_days';
     public const RESERVATION_FREE_WINDOW_DAYS = 'reservation.free_window_days';
+    public const RESERVATION_REQUIRE_LICENSE_PLATE = 'reservation.require_license_plate';
 
     private function __construct()
     {

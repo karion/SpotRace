@@ -81,7 +81,16 @@ Limity rezerwacji są ustawieniami globalnymi z możliwością nadpisania dla fi
 - `reservation.confirmation_deadline_hour` — godzina graniczna (domyślnie 7).
 - `reservation.assigned_window_days` — ile dni wprzód można potwierdzać/przekazywać przypisane miejsce.
 - `reservation.free_window_days` — ile dni wprzód można rezerwować wolne miejsca.
+- `reservation.require_license_plate` — czy nowa rezerwacja musi zawierać numer rejestracyjny.
 
 Strefa czasowa pozostaje zmienną środowiskową `APP_TIMEZONE`.
 
 Szczegółowy model firm i transferu miejsc opisuje `docs/firmy.md`.
+
+## Pojazdy i tablice rejestracyjne
+
+Użytkownik może zarządzać własną listą pojazdów w sekcji „Moje pojazdy”. Numer jest normalizowany do wielkich liter bez spacji, może zawierać litery ASCII, cyfry i myślnik oraz ma najwyżej 20 znaków. Ten sam numer można zapisać tylko raz na koncie użytkownika.
+
+Przy rezerwacji wolnego miejsca i potwierdzaniu przypisania użytkownik wybiera zapisany pojazd albo wpisuje nowy numer. Wpisanie nowego numeru zapisuje pojazd na koncie. Przy przekazaniu miejsca przekazujący wybiera pojazd odbiorcy z listy albo wpisuje nowy numer odbiorcy; serwer ponownie sprawdza własność pojazdu i przynależność użytkownika do firmy.
+
+Rezerwacja przechowuje niezależny tekstowy snapshot tablicy (`licensePlate`, opcjonalnie `NULL`). Edycja lub usunięcie pojazdu nie zmienia wcześniejszych rezerwacji. Włączenie ustawienia `reservation.require_license_plate` wymusza podanie tablicy przy każdej nowej rezerwacji, bez blokowania istniejących danych.
