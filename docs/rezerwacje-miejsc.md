@@ -9,8 +9,8 @@
 3. Użytkownik i company admin należą dokładnie do jednej firmy.
 4. Użytkownik widzi, rezerwuje, potwierdza i przekazuje wyłącznie miejsca swojej firmy.
 5. Przypisana osoba może:
-   - potwierdzić swoje miejsce (dla dziś i do 7 dni w przód),
-   - przekazać swoje miejsce innej osobie (dla dziś i do 7 dni w przód).
+   - potwierdzić swoje miejsce (dla dziś i w skonfigurowanym oknie, domyślnie do 7 dni w przód),
+   - przekazać swoje miejsce innej osobie z firmy (w tym samym oknie).
 6. Dla dnia bieżącego przypisane miejsce jest zablokowane dla innych użytkowników tej samej firmy do skonfigurowanej godziny granicznej, domyślnie 07:00.
 7. Zwykły użytkownik może rezerwować wolne miejsca swojej firmy na dowolny dzień w oknie skonfigurowanym globalnie albo nadpisanym dla firmy.
 8. Jedna osoba może mieć maksymalnie jedną rezerwację dziennie.
@@ -94,3 +94,16 @@ Użytkownik może zarządzać własną listą pojazdów w sekcji „Moje pojazdy
 Przy rezerwacji wolnego miejsca i potwierdzaniu przypisania użytkownik wybiera zapisany pojazd albo wpisuje nowy numer. Wpisanie nowego numeru zapisuje pojazd na koncie. Przy przekazaniu miejsca przekazujący wybiera pojazd odbiorcy z listy albo wpisuje nowy numer odbiorcy; serwer ponownie sprawdza własność pojazdu i przynależność użytkownika do firmy.
 
 Rezerwacja przechowuje niezależny tekstowy snapshot tablicy (`licensePlate`, opcjonalnie `NULL`). Edycja lub usunięcie pojazdu nie zmienia wcześniejszych rezerwacji. Włączenie ustawienia `reservation.require_license_plate` wymusza podanie tablicy przy każdej nowej rezerwacji, bez blokowania istniejących danych.
+
+## Obsługa formularzy i podział odpowiedzialności
+
+- `HomeController` wyświetla kalendarz przygotowany przez `ReservationCalendar`. Kalendarz obejmuje oba skonfigurowane okna rezerwacji. Własne przypisane miejsce obsługuje się przez potwierdzenie lub przekazanie.
+- `ReservationController` obsługuje formularze Symfony dla rezerwacji wolnego miejsca, potwierdzania, przekazywania i zwalniania. Adresy i metody HTTP pozostają bez zmian.
+- Formularze sprawdzają CSRF, poprawność daty, wybór użytkownika i pojazdu oraz dane rejestracji. Przy błędzie odpowiedź ma status 422 i zawiera formularz z zachowanymi danymi i komunikatami. Nieprawidłową ukrytą datę lub miejsce należy wybrać ponownie z kalendarza.
+- `ReservationManager` ponownie sprawdza reguły przy zapisie: firmę miejsca w danym dniu, przypisanie, okna czasowe, zajętość miejsca, rezerwację odbiorcy i własność pojazdu. Dotyczy to również formularzy otwartych przed zmianą dostępności lub transferem miejsca.
+- `ReservationPolicy` interpretuje ścisłe daty `YYYY-MM-DD` o północy w `APP_TIMEZONE`. Zapytania o daty używają typu Doctrine `DATE_IMMUTABLE`.
+- Rezerwacja i nowy pojazd są zapisywane w jednej transakcji `flush()`. Indeksy `uniq_spot_per_day` i `uniq_user_per_day` zabezpieczają równoczesne żądania. Konflikt bazy wycofuje cały zapis i zwraca komunikat z prośbą o odświeżenie.
+
+Zwolnić można wyłącznie własną rezerwację, przed godziną graniczną danego dnia. Włączenie obowiązkowej rejestracji nie blokuje zwalniania istniejących rezerwacji.
+
+Zrzuty formularzy na danych testowych: [kalendarz](screenshots/reservations/calendar.png), [przekazanie miejsca](screenshots/reservations/delegate.png), [błąd walidacji](screenshots/reservations/validation.png).

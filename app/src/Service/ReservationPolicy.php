@@ -22,6 +22,19 @@ class ReservationPolicy
         return $this->now()->setTime(0, 0);
     }
 
+    public function parseDate(string $value): \DateTimeImmutable
+    {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/D', $value)) {
+            throw new \DomainException('Nieprawidłowa data rezerwacji.');
+        }
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value, new \DateTimeZone($this->timezone));
+        if (!$date || $date->format('Y-m-d') !== $value) {
+            throw new \DomainException('Nieprawidłowa data rezerwacji.');
+        }
+
+        return $date;
+    }
+
     public function confirmationCutoff(\DateTimeImmutable $date, ?Company $company = null): \DateTimeImmutable
     {
         return $date->setTime($this->confirmationDeadlineHour($company), 0);

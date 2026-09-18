@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}SpotRace - rezerwacja{% endblock %}
+
+{% block body %}
+    <main class="card bg-body-tertiary shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h3">Popraw rezerwację</h1>
+            <p>Dzień: <strong>{{ form.date.vars.value }}</strong></p>
+            {{ form_start(form) }}
+                {{ form_widget(form) }}
+                <a class="btn btn-outline-light" href="{{ path('app_home') }}">Wróć do listy miejsc</a>
+            {{ form_end(form) }}
+        </div>
+    </main>
+{% endblock %}
