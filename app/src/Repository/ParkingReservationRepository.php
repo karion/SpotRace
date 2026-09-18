@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\ParkingReservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -25,7 +26,7 @@ class ParkingReservationRepository extends ServiceEntityRepository
             ->join('r.parkingSpot', 's')
             ->join('r.reservedForUser', 'u')
             ->andWhere('r.reservationDate = :date')
-            ->setParameter('date', $date)
+            ->setParameter('date', $date, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getResult();
     }
@@ -38,8 +39,8 @@ class ParkingReservationRepository extends ServiceEntityRepository
             ->join('r.parkingSpot', 's')
             ->join('r.reservedForUser', 'u')
             ->andWhere('r.reservationDate BETWEEN :startsAt AND :endsAt')
-            ->setParameter('startsAt', $startsAt)
-            ->setParameter('endsAt', $endsAt)
+            ->setParameter('startsAt', $startsAt, Types::DATE_IMMUTABLE)
+            ->setParameter('endsAt', $endsAt, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getResult();
     }
@@ -52,7 +53,7 @@ class ParkingReservationRepository extends ServiceEntityRepository
             ->andWhere('s.id = :spotId')
             ->andWhere('r.reservationDate >= :date')
             ->setParameter('spotId', $spotId)
-            ->setParameter('date', $date)
+            ->setParameter('date', $date, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getResult();
     }
@@ -65,7 +66,7 @@ class ParkingReservationRepository extends ServiceEntityRepository
             ->andWhere('r.reservedForUser = :user')
             ->andWhere('r.reservationDate = :date')
             ->setParameter('user', $user)
-            ->setParameter('date', $date)
+            ->setParameter('date', $date, Types::DATE_IMMUTABLE)
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
@@ -79,7 +80,7 @@ class ParkingReservationRepository extends ServiceEntityRepository
             ->andWhere('s.id = :spotId')
             ->andWhere('r.reservationDate = :date')
             ->setParameter('spotId', $spotId)
-            ->setParameter('date', $date)
+            ->setParameter('date', $date, Types::DATE_IMMUTABLE)
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();

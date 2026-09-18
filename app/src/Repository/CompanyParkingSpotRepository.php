@@ -6,6 +6,7 @@ use App\Entity\Company;
 use App\Entity\CompanyParkingSpot;
 use App\Entity\ParkingSpot;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -40,7 +41,7 @@ class CompanyParkingSpotRepository extends ServiceEntityRepository
             ->andWhere('cps.startsAt <= :date')
             ->andWhere('cps.endsAt IS NULL OR cps.endsAt >= :date')
             ->setParameter('parkingSpot', $parkingSpot)
-            ->setParameter('date', $date)
+            ->setParameter('date', $date, Types::DATE_IMMUTABLE)
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
@@ -50,14 +51,15 @@ class CompanyParkingSpotRepository extends ServiceEntityRepository
     public function findActiveForCompanyInRange(Company $company, \DateTimeImmutable $startsAt, \DateTimeImmutable $endsAt): array
     {
         return $this->createQueryBuilder('cps')
-            ->addSelect('s')
+            ->addSelect('s', 'l')
             ->join('cps.parkingSpot', 's')
+            ->leftJoin('s.location', 'l')
             ->andWhere('cps.company = :company')
             ->andWhere('cps.startsAt <= :endsAt')
             ->andWhere('cps.endsAt IS NULL OR cps.endsAt >= :startsAt')
             ->setParameter('company', $company)
-            ->setParameter('startsAt', $startsAt)
-            ->setParameter('endsAt', $endsAt)
+            ->setParameter('startsAt', $startsAt, Types::DATE_IMMUTABLE)
+            ->setParameter('endsAt', $endsAt, Types::DATE_IMMUTABLE)
             ->orderBy('s.name', 'ASC')
             ->getQuery()
             ->getResult();
@@ -70,7 +72,7 @@ class CompanyParkingSpotRepository extends ServiceEntityRepository
             ->andWhere('cps.company = :company')
             ->andWhere('cps.endsAt IS NULL OR cps.endsAt >= :today')
             ->setParameter('company', $company)
-            ->setParameter('today', $today)
+            ->setParameter('today', $today, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getSingleScalarResult() > 0;
     }
@@ -84,8 +86,8 @@ class CompanyParkingSpotRepository extends ServiceEntityRepository
             ->andWhere('cps.startsAt <= :newEnd')
             ->andWhere('cps.endsAt IS NULL OR cps.endsAt >= :startsAt')
             ->setParameter('parkingSpot', $parkingSpot)
-            ->setParameter('startsAt', $startsAt)
-            ->setParameter('newEnd', $newEnd);
+            ->setParameter('startsAt', $startsAt, Types::DATE_IMMUTABLE)
+            ->setParameter('newEnd', $newEnd, Types::DATE_IMMUTABLE);
 
         if (null !== $excludedId) {
             $qb->andWhere('cps.id != :excludedId')->setParameter('excludedId', $excludedId);

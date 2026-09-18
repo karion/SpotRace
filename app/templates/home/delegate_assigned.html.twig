@@ -6,42 +6,17 @@
     <main class="card bg-body-tertiary shadow-sm">
         <div class="card-body p-4 p-md-5">
             <h1 class="h3">Przekaż przypisane miejsce</h1>
-            <p>Dzień: <strong>{{ displayDate }}</strong></p>
+            <p>Dzień: <strong>{{ date|date('d/m/Y') }}</strong></p>
             <p>Miejsce: <strong>{{ assignment.parkingSpot.name }}</strong> ({{ assignment.parkingSpot.description }})</p>
 
-            <form method="post" action="{{ path('app_reservation_delegate_assigned_submit') }}" class="vstack gap-3">
-                <input type="hidden" name="_token" value="{{ csrf_token('delegate-assigned-' ~ date|date('Y-m-d')) }}">
-                <input type="hidden" name="date" value="{{ date|date('Y-m-d') }}">
-
-                <div>
-                    <label class="form-label" for="target_user_id">Wybierz użytkownika</label>
-                    <select class="form-select" id="target_user_id" name="target_user_id" required>
-                        {% for managedUser in users %}
-                            {% if managedUser.id != currentUser.id %}
-                                <option value="{{ managedUser.id }}">{{ managedUser.name }} ({{ managedUser.email }})</option>
-                            {% endif %}
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div>
-                    <label class="form-label" for="target_vehicle_id">Pojazd użytkownika</label>
-                    <select class="form-select" id="target_vehicle_id" name="target_vehicle_id">
-                        <option value="">Wpisz nową rejestrację poniżej</option>
-                        {% for managedUser in users %}
-                            {% for vehicle in vehiclesByUser[managedUser.id]|default([]) %}
-                                <option value="{{ vehicle.id }}">{{ managedUser.name }} — {{ vehicle.licensePlate }}</option>
-                            {% endfor %}
-                        {% endfor %}
-                    </select>
-                    <input class="form-control mt-2" name="target_license_plate" maxlength="20" placeholder="Nowa rejestracja odbiorcy">
-                </div>
-
-                <div class="d-flex gap-2 flex-wrap">
-                    <button class="btn btn-primary" type="submit">Przekaż miejsce</button>
-                    <a class="btn btn-outline-light" href="{{ path('app_home') }}">Anuluj</a>
-                </div>
-            </form>
+            {{ form_start(form) }}
+                {{ form_errors(form) }}
+                {{ form_row(form.target_user_id) }}
+                {{ form_row(form.target_vehicle_id) }}
+                {{ form_row(form.target_license_plate) }}
+                {{ form_row(form.save) }}
+                <a class="btn btn-outline-light" href="{{ path('app_home') }}">Anuluj</a>
+            {{ form_end(form) }}
         </div>
     </main>
 {% endblock %}

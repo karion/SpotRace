@@ -42,6 +42,7 @@ class VehicleRepository extends ServiceEntityRepository
     public function findByCompany(Company $company): array
     {
         return $this->createQueryBuilder('vehicle')
+            ->addSelect('owner')
             ->join('vehicle.owner', 'owner')
             ->andWhere('owner.company = :company')
             ->setParameter('company', $company)

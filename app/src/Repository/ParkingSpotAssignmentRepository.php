@@ -6,6 +6,7 @@ use App\Entity\Company;
 use App\Entity\ParkingSpotAssignment;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -24,7 +25,7 @@ class ParkingSpotAssignmentRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('a')
             ->andWhere('a.startsAt <= :date')
             ->andWhere('a.endsAt IS NULL OR a.endsAt >= :date')
-            ->setParameter('date', $date)
+            ->setParameter('date', $date, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getResult();
     }
@@ -38,7 +39,7 @@ class ParkingSpotAssignmentRepository extends ServiceEntityRepository
             ->andWhere('a.startsAt <= :date')
             ->andWhere('a.endsAt IS NULL OR a.endsAt >= :date')
             ->setParameter('user', $user)
-            ->setParameter('date', $date)
+            ->setParameter('date', $date, Types::DATE_IMMUTABLE)
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
@@ -54,8 +55,8 @@ class ParkingSpotAssignmentRepository extends ServiceEntityRepository
             ->andWhere('a.startsAt <= :endsAt')
             ->andWhere('a.endsAt IS NULL OR a.endsAt >= :startsAt')
             ->setParameter('user', $user)
-            ->setParameter('startsAt', $startsAt)
-            ->setParameter('endsAt', $endsAt)
+            ->setParameter('startsAt', $startsAt, Types::DATE_IMMUTABLE)
+            ->setParameter('endsAt', $endsAt, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getResult();
     }
@@ -68,8 +69,8 @@ class ParkingSpotAssignmentRepository extends ServiceEntityRepository
             ->join('a.parkingSpot', 's')
             ->andWhere('a.startsAt <= :endsAt')
             ->andWhere('a.endsAt IS NULL OR a.endsAt >= :startsAt')
-            ->setParameter('startsAt', $startsAt)
-            ->setParameter('endsAt', $endsAt)
+            ->setParameter('startsAt', $startsAt, Types::DATE_IMMUTABLE)
+            ->setParameter('endsAt', $endsAt, Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getResult();
     }
@@ -94,7 +95,7 @@ class ParkingSpotAssignmentRepository extends ServiceEntityRepository
             ->andWhere('s.id = :spotId')
             ->andWhere('a.endsAt IS NULL OR a.endsAt >= :date')
             ->setParameter('spotId', $spotId)
-            ->setParameter('date', $date)
+            ->setParameter('date', $date, Types::DATE_IMMUTABLE)
             ->orderBy('a.startsAt', 'ASC')
             ->getQuery()
             ->getResult();
@@ -133,8 +134,8 @@ class ParkingSpotAssignmentRepository extends ServiceEntityRepository
             ->andWhere('a.startsAt <= :newEnd')
             ->andWhere('a.endsAt IS NULL OR a.endsAt >= :newStart')
             ->setParameter('spotId', $spotId)
-            ->setParameter('newStart', $newStart)
-            ->setParameter('newEnd', $newEnd);
+            ->setParameter('newStart', $newStart, Types::DATE_IMMUTABLE)
+            ->setParameter('newEnd', $newEnd, Types::DATE_IMMUTABLE);
 
         if (null !== $excludedAssignmentId) {
             $qb

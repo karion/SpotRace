@@ -8,10 +8,9 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: ParkingReservationRepository::class)]
-#[ORM\Table(name: 'parking_reservation', uniqueConstraints: [
-    new ORM\UniqueConstraint(name: 'uniq_spot_per_day', columns: ['parking_spot_id', 'reservation_date']),
-    new ORM\UniqueConstraint(name: 'uniq_user_per_day', columns: ['reserved_for_user_id', 'reservation_date']),
-])]
+#[ORM\Table(name: 'parking_reservation')]
+#[ORM\UniqueConstraint(name: 'uniq_spot_per_day', columns: ['parking_spot_id', 'reservation_date'])]
+#[ORM\UniqueConstraint(name: 'uniq_user_per_day', columns: ['reserved_for_user_id', 'reservation_date'])]
 class ParkingReservation
 {
     #[ORM\Id]

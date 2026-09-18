@@ -60,6 +60,7 @@ class LoadFixturesCommand extends Command
         $spotA1 = $this->parkingSpot('A-01', 'Miejsce przy wejściu A', $locationA);
         $spotA2 = $this->parkingSpot('A-02', 'Miejsce przy wejściu A', $locationA);
         $spotA3 = $this->parkingSpot('A-03', 'Miejsce dla gości Acme', $locationA);
+        $spotA4 = $this->parkingSpot('A-04', 'Miejsce Acme przy wejściu B', $locationB);
         $spotB1 = $this->parkingSpot('B-01', 'Miejsce przy wejściu B', $locationB);
         $spotB2 = $this->parkingSpot('B-02', 'Miejsce przy wejściu B', $locationB);
         $spotB3 = $this->parkingSpot('B-03', 'Miejsce dla gości Globex', $locationB);
@@ -67,6 +68,7 @@ class LoadFixturesCommand extends Command
         $this->companySpot($acme, $spotA1, $today);
         $this->companySpot($acme, $spotA2, $today);
         $this->companySpot($acme, $spotA3, $today);
+        $this->companySpot($acme, $spotA4, $today);
         $this->companySpot($globex, $spotB1, $today);
         $this->companySpot($globex, $spotB2, $today);
         $this->companySpot($globex, $spotB3, $today);
