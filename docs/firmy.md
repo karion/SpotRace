@@ -73,7 +73,9 @@ Jedno miejsce należy do najwyżej jednej lokalizacji, a lokalizacja może obejm
 
 Lokalizacji posiadającej miejsca nie można usunąć. Najpierw należy przenieść miejsca do innej lokalizacji. Administrator firmy i użytkownik nie mogą zarządzać słownikiem. Lokalizacja nie wpływa na przynależność miejsca do firmy ani na zasady rezerwowania.
 
-Migracja `Version20260916120000` dodaje tabelę `parking_location` i opcjonalne powiązanie `parking_spot.location_id`, zachowując istniejące rezerwacje i przypisania. Dane demonstracyjne zawierają lokalizacje „Parking A” i „Parking B”. Obsługa pojazdów, tablic rejestracyjnych i raportu PDF stanowi oddzielne zadanie korzystające z tego słownika.
+Migracja `Version20260916120000` dodaje tabelę `parking_location` i opcjonalne powiązanie `parking_spot.location_id`, zachowując istniejące rezerwacje i przypisania. Dane demonstracyjne zawierają lokalizacje „Parking A” i „Parking B”. Obsługa raportu PDF pozostaje osobnym zadaniem korzystającym z tego słownika.
+
+Administrator firmy może w sekcji „Ustawienia firmy” włączyć wymaganie numeru rejestracyjnego przy każdej nowej rezerwacji. Wyłączenie ustawienia usuwa nadpisanie i przywraca wartość globalną; istniejące rezerwacje pozostają bez zmian.
 
 Po aktualizacji kodu należy uruchomić `make migrate`. Testy HTTP lokalizacji korzystają z tymczasowej bazy SQLite (wymagane rozszerzenie `pdo_sqlite`), niezależnej od bazy aplikacji. Konfiguracja testowa wyłącza pasek profilera, którego trasy są dostępne wyłącznie w środowisku developerskim.
 

@@ -36,6 +36,9 @@ class ParkingReservation
     #[ORM\Column(length: 30)]
     private string $type;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $licensePlate = null;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -113,5 +116,17 @@ class ParkingReservation
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getLicensePlate(): ?string
+    {
+        return $this->licensePlate;
+    }
+
+    public function setLicensePlate(?string $licensePlate): self
+    {
+        $this->licensePlate = $licensePlate;
+
+        return $this;
     }
 }

@@ -1,0 +1,43 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Moje pojazdy{% endblock %}
+
+{% block body %}
+    <main class="card bg-body-tertiary shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="h3">Moje pojazdy</h1>
+            <p><a href="{{ path('app_home') }}">← Wróć do rezerwacji</a></p>
+
+            <h2 class="h5 mt-4">Dodaj pojazd</h2>
+            {{ form_start(createForm) }}
+                {{ form_row(createForm.licensePlate) }}
+                {{ form_row(createForm.save) }}
+            {{ form_end(createForm) }}
+
+            <h2 class="h5 mt-4">Zapisane pojazdy</h2>
+            {% if vehicles is empty %}
+                <p>Nie masz jeszcze zapisanych pojazdów.</p>
+            {% else %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle">
+                        <thead><tr><th>Numer rejestracyjny</th><th>Akcje</th></tr></thead>
+                        <tbody>
+                            {% for vehicle in vehicles %}
+                                <tr>
+                                    <td>{{ vehicle.licensePlate }}</td>
+                                    <td class="d-flex gap-2">
+                                        <a class="btn btn-primary btn-sm" href="{{ path('app_vehicle_edit', {id: vehicle.id}) }}">Edytuj</a>
+                                        <form method="post" action="{{ path('app_vehicle_delete', {id: vehicle.id}) }}" onsubmit="return confirm('Usunąć pojazd?');">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete-vehicle-' ~ vehicle.id) }}">
+                                            <button class="btn btn-danger btn-sm" type="submit">Usuń</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+{% endblock %}

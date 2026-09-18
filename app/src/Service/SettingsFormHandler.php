@@ -101,6 +101,29 @@ class SettingsFormHandler
         $this->entityManager->flush();
     }
 
+    public function updateCompanyLicensePlateRequirement(Request $request, Company $company): void
+    {
+        $setting = $this->appSettings->findOneByKey(SettingKeys::RESERVATION_REQUIRE_LICENSE_PLATE);
+        if (!$setting instanceof AppSetting) {
+            throw new \RuntimeException('Brak ustawienia wymogu numeru rejestracyjnego.');
+        }
+
+        $override = $this->companySettings->findOneByCompanyAndKey($company, SettingKeys::RESERVATION_REQUIRE_LICENSE_PLATE);
+        if ($request->request->has('require_license_plate')) {
+            if (!$override instanceof CompanySetting) {
+                $override = (new CompanySetting())
+                    ->setCompany($company)
+                    ->setKey(SettingKeys::RESERVATION_REQUIRE_LICENSE_PLATE);
+                $this->entityManager->persist($override);
+            }
+            $override->setValue(true);
+        } elseif ($override instanceof CompanySetting) {
+            $this->entityManager->remove($override);
+        }
+
+        $this->entityManager->flush();
+    }
+
     /** @return array<string, mixed> */
     private function requestArray(Request $request, string $key): array
     {

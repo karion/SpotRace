@@ -18,6 +18,12 @@
                 <div class="d-flex gap-2 flex-wrap mb-4">
                     <a class="btn btn-primary btn-sm" href="{{ path('app_company_parking_spot_index') }}">Miejsca firmy</a>
                     <a class="btn btn-outline-light btn-sm" href="{{ path('app_company_user_index') }}">Użytkownicy firmy</a>
+                    <a class="btn btn-outline-light btn-sm" href="{{ path('app_company_settings') }}">Ustawienia firmy</a>
+                </div>
+            {% endif %}
+            {% if user %}
+                <div class="d-flex gap-2 flex-wrap mb-4">
+                    <a class="btn btn-outline-light btn-sm" href="{{ path('app_vehicle_index') }}">Moje pojazdy</a>
                 </div>
             {% endif %}
 
@@ -37,6 +43,13 @@
                                         <form method="post" action="{{ path('app_reservation_confirm_assigned') }}">
                                             <input type="hidden" name="_token" value="{{ csrf_token('confirm-assigned-' ~ day.date|date('Y-m-d')) }}">
                                             <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
+                                            <select class="form-select form-select-sm mb-2" name="vehicle_id" aria-label="Zapisany pojazd">
+                                                <option value="">Bez rejestracji</option>
+                                                {% for vehicle in vehicles %}
+                                                    <option value="{{ vehicle.id }}">{{ vehicle.licensePlate }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <input class="form-control form-control-sm mb-2" name="license_plate" maxlength="20" placeholder="Nowa rejestracja">
                                             <button class="btn btn-primary btn-sm" type="submit">Potwierdź</button>
                                         </form>
 
@@ -54,6 +67,7 @@
                                     <span>
                                         Masz już rezerwację: <strong>{{ day.userReservation.parkingSpot.name }}</strong>
                                         ({{ day.userReservation.parkingSpot.description }}).
+                                        {% if day.userReservation.licensePlate %}<span class="ms-1">Rejestracja: <strong>{{ day.userReservation.licensePlate }}</strong></span>{% endif %}
                                     </span>
                                     {% if day.canReleaseReservation %}
                                         <form method="post" action="{{ path('app_reservation_release') }}">
@@ -89,6 +103,13 @@
                                                             <input type="hidden" name="_token" value="{{ csrf_token('reserve-free-' ~ day.date|date('Y-m-d')) }}">
                                                             <input type="hidden" name="date" value="{{ day.date|date('Y-m-d') }}">
                                                             <input type="hidden" name="spot_id" value="{{ spot.id }}">
+                                                            <select class="form-select form-select-sm mb-2" name="vehicle_id" aria-label="Zapisany pojazd">
+                                                                <option value="">Bez rejestracji</option>
+                                                                {% for vehicle in vehicles %}
+                                                                    <option value="{{ vehicle.id }}">{{ vehicle.licensePlate }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                            <input class="form-control form-control-sm mb-2" name="license_plate" maxlength="20" placeholder="Nowa rejestracja">
                                                             <button class="btn btn-primary btn-sm" type="submit">Rezerwuj</button>
                                                         </form>
                                                     {% else %}
