@@ -2,6 +2,7 @@
 
 Aplikacja Symfony 7.4 z frontem w Twig i bazą MySQL.
 Kod aplikacji znajduje się w katalogu `app/`.
+Kontener FrankenPHP korzysta z PHP 8.5 (obraz bazowy `dunglas/frankenphp:1-php8.5`).
 
 ## Wymagania lokalne
 
@@ -11,8 +12,12 @@ Kod aplikacji znajduje się w katalogu `app/`.
 ## Uruchomienie środowiska developerskiego
 
 ```bash
-make up
+make build
 ```
+
+`make build` pobiera aktualny obraz bazowy z poprawkami PHP 8.5, buduje obraz aplikacji
+i uruchamia kontenery. Użyj go również po zmianie wersji PHP lub w celu pobrania
+najnowszych poprawek. Kolejne uruchomienia bez przebudowy: `make up`.
 
 ## Instalacja zależności (Composer w kontenerze)
 

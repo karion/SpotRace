@@ -1,6 +1,6 @@
 services:
   frankenphp:
-    image: dunglas/frankenphp:1-php8.3
+    image: spotrace-frankenphp:php8.5
     container_name: spotrace_frankenphp
     build:
       context: .
