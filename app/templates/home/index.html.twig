@@ -77,7 +77,7 @@
                                                     {% elseif day.canReserveFree and day.freeForm is defined %}
                                                         <button class="btn {{ isOwnAssignment ? 'btn-outline-primary' : 'btn-outline-light' }} w-100 h-100 text-start" type="button" data-bs-toggle="modal" data-bs-target="#vehicle-modal-{{ dayId }}" data-form-target="free-form-{{ dayId }}" data-spot-id="{{ spot.id }}" data-context="{{ context }}" data-action-label="Zarezerwuj {{ spot.name }}">
                                                             <strong>{{ spot.name }}</strong><small class="d-block">{{ spot.description }}{% if isOwnAssignment %} · Twoje przypisanie{% endif %}</small>
-                                                            <span class="d-block">Dostępne →</span>
+                                                            <span class="d-inline-flex align-items-center gap-2 mt-2 px-2 py-1 rounded bg-primary text-white fw-semibold">Zarezerwuj miejsce <span aria-hidden="true">→</span></span>
                                                             {% if isOwnAssignment %}<small class="d-block">Pierwszeństwo wygasło. Możesz zarezerwować miejsce.</small>{% endif %}
                                                         </button>
                                                     {% else %}
