@@ -32,7 +32,7 @@ class CompanyRegistrationPolicy
     public function validatePassword(string $password, ?Company $company): array
     {
         $errors = [];
-        $passwordMinLength = max(1, $this->settings->int(SettingKeys::REGISTRATION_PASSWORD_MIN_LENGTH, $company));
+        $passwordMinLength = $this->passwordMinLength($company);
         if (mb_strlen($password) < $passwordMinLength) {
             $errors[] = sprintf('Hasło musi mieć minimum %d znaków.', $passwordMinLength);
         }
@@ -50,6 +50,11 @@ class CompanyRegistrationPolicy
         }
 
         return $errors;
+    }
+
+    public function passwordMinLength(?Company $company): int
+    {
+        return max(1, $this->settings->int(SettingKeys::REGISTRATION_PASSWORD_MIN_LENGTH, $company));
     }
 
     private function isDomainAllowed(string $email, ?Company $company): bool

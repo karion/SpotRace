@@ -7,6 +7,21 @@
         <div class="card-body p-4 p-md-5">
             <h1 class="h3">Ustawienia firmy {{ company.name }}</h1>
             <p><a href="{{ path('app_home') }}">← Wróć do rezerwacji</a></p>
+            <h2 class="h4">Zasady rejestracji</h2>
+            <p>Każda zasada może dziedziczyć wartość globalną albo korzystać z własnej wartości firmy. Zmiana ważności linków dotyczy tylko nowych linków; nie wymusza zmiany istniejących haseł.</p>
+            {{ form_start(registrationForm) }}
+                {{ form_errors(registrationForm) }}
+                {% for field, values in registrationValues %}
+                    <fieldset class="border rounded p-3 mb-3">
+                        <legend class="float-none w-auto fs-6 px-2">{{ registrationForm[field].vars.label }}</legend>
+                        <p class="small text-body-secondary">Globalna: {{ values.global }} · Obowiązująca: {{ values.effective }}</p>
+                        {{ form_widget(registrationForm[field]) }}
+                        {{ form_errors(registrationForm[field]) }}
+                    </fieldset>
+                {% endfor %}
+                {{ form_row(registrationForm.save) }}
+            {{ form_end(registrationForm) }}
+            <h2 class="h4 mt-4">Rezerwacje</h2>
             <form method="post">
                 <input type="hidden" name="_token" value="{{ csrf_token('company-settings-' ~ company.id) }}">
                 <div class="form-check mb-3">
