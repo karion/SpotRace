@@ -80,3 +80,15 @@ Administrator firmy może w sekcji „Ustawienia firmy” włączyć wymaganie n
 Po aktualizacji kodu należy uruchomić `make migrate`. Testy HTTP lokalizacji korzystają z tymczasowej bazy SQLite (wymagane rozszerzenie `pdo_sqlite`), niezależnej od bazy aplikacji. Konfiguracja testowa wyłącza pasek profilera, którego trasy są dostępne wyłącznie w środowisku developerskim.
 
 Zrzuty ekranów na danych demonstracyjnych: [słownik lokalizacji](screenshots/locations/list.png), [miejsca z lokalizacjami](screenshots/locations/spots.png).
+
+## Samodzielna konfiguracja zasad rejestracji przez firmę
+
+Administrator firmy w „Ustawieniach firmy” (`/company/settings`) zarządza domenami e-mail, minimalną długością hasła, wymaganiami małych i wielkich liter, cyfr i znaków specjalnych oraz ważnością nowych linków w godzinach. Każde pole niezależnie dziedziczy ustawienie globalne albo zapisuje własną wartość, również łagodniejszą. Panel pokazuje wartość globalną i aktualnie obowiązującą.
+
+Pusta własna lista domen dopuszcza wszystkie domeny. Domeny oddziela się przecinkami lub nowymi wierszami; wielkość liter i duplikaty są normalizowane. Lista wymaga dokładnych domen, bez adresów e-mail, URL, wildcardów ani automatycznego dopuszczania subdomen. Długość hasła i ważność linków muszą być dodatnimi liczbami całkowitymi.
+
+Zmiany są zapisywane formularzem Symfony z CSRF, wyłącznie dla firmy zalogowanego administratora. Niepoprawny formularz nie zapisuje żadnego nadpisania. Powrót do dziedziczenia usuwa pojedyncze nadpisanie; ustawienia rezerwacji pozostają niezależne. Administrator globalny widzi te same nadpisania w panelu firmy.
+
+Polityka obowiązuje przy kolejnych rejestracjach i ustawianiu haseł, bez wymuszania resetu istniejących haseł. Zmieniona ważność linków dotyczy tylko nowych tokenów; generowanie linków nadal należy do administratora globalnego. Zmiana nie wymaga migracji bazy.
+
+Podgląd: [ustawienia firmy](screenshots/company-settings.png).

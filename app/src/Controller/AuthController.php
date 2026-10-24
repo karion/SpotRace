@@ -109,6 +109,7 @@ class AuthController extends AbstractController
 
         return $this->render('auth/register.html.twig', [
             'company' => $company,
+            'passwordMinLength' => $this->registrationPolicy->passwordMinLength($company),
             'token' => $tokenValue,
         ]);
     }

@@ -3,6 +3,8 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Form\CompanyRegistrationSettingsType;
+use App\Service\CompanyRegistrationSettings;
 use App\Service\SettingKeys;
 use App\Service\SettingsFormHandler;
 use App\Service\SettingsResolver;
@@ -21,14 +23,23 @@ class CompanySettingsController extends AbstractController
     }
 
     #[Route('', name: 'app_company_settings', methods: ['GET', 'POST'])]
-    public function index(Request $request): Response
+    public function index(Request $request, CompanyRegistrationSettings $registrationSettings): Response
     {
         $user = $this->getUser();
         if (!$user instanceof User || !$user->getCompany()) {
             throw $this->createAccessDeniedException('Konto nie jest przypisane do firmy.');
         }
 
-        if ($request->isMethod('POST')) {
+        $registrationForm = $this->createForm(CompanyRegistrationSettingsType::class, $registrationSettings->data($user->getCompany()));
+        $registrationForm->handleRequest($request);
+        if ($registrationForm->isSubmitted() && $registrationForm->isValid()) {
+            $registrationSettings->save($user->getCompany(), $registrationForm->getData());
+            $this->addFlash('success', 'Zasady rejestracji zostały zapisane.');
+
+            return $this->redirectToRoute('app_company_settings');
+        }
+
+        if ($request->isMethod('POST') && !$registrationForm->isSubmitted()) {
             if (!$this->isCsrfTokenValid('company-settings-'.$user->getCompany()->getId(), (string) $request->request->get('_token'))) {
                 throw $this->createAccessDeniedException('Nieprawidłowy token CSRF.');
             }
@@ -40,7 +51,9 @@ class CompanySettingsController extends AbstractController
 
         return $this->render('company/settings/index.html.twig', [
             'company' => $user->getCompany(),
+            'registrationForm' => $registrationForm->createView(),
+            'registrationValues' => $registrationSettings->values($user->getCompany()),
             'requireLicensePlate' => $this->settings->bool(SettingKeys::RESERVATION_REQUIRE_LICENSE_PLATE, $user->getCompany()),
-        ]);
+        ], new Response(status: $registrationForm->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
     }
 }

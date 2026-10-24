@@ -10,6 +10,12 @@ use App\Repository\CompanySettingRepository;
 
 class SettingsResolver
 {
+    public function reset(): void
+    {
+        $this->globalSettings = null;
+        $this->companySettingsByCompanyId = [];
+    }
+
     /** @var array<string, AppSetting>|null */
     private ?array $globalSettings = null;
 
