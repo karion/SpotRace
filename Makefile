@@ -38,7 +38,8 @@ down:
 restart: down up
 
 build:
-	$(DC) up -d --build
+	$(DC) build --pull
+	$(DC) up -d
 
 ps:
 	$(DC) ps
