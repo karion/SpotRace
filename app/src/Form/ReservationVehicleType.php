@@ -30,7 +30,10 @@ class ReservationVehicleType extends AbstractType
                 'property_path' => 'vehicleId',
                 'label' => 'Zapisany pojazd',
                 'choices' => $options['vehicle_choices'],
-                'placeholder' => false,
+                'placeholder' => $options['plate_required'] ? 'Wybierz pojazd' : false,
+                'choice_attr' => static fn ($choice, $label, $value): array => isset($options['vehicle_owners'][$value]) ? ['data-owner-id' => $options['vehicle_owners'][$value]] : [],
+                'attr' => ['data-vehicle-choice' => '', 'data-plate-required' => $options['plate_required'] ? '1' : '0'],
+                'help' => $options['plate_required'] ? 'Firma wymaga numeru rejestracyjnego. Wybierz pojazd lub wpisz nowy numer.' : null,
                 'required' => false,
                 'invalid_message' => 'Nieprawidłowy pojazd.',
             ])
@@ -38,6 +41,7 @@ class ReservationVehicleType extends AbstractType
                 'property_path' => 'licensePlate',
                 'label' => 'Nowa rejestracja',
                 'required' => false,
+                'row_attr' => ['data-new-vehicle-field' => ''],
                 'help' => 'Wpisanie nowej rejestracji zapisze pojazd na koncie osoby korzystającej z miejsca.',
                 'constraints' => [new Callback(function (?string $value, ExecutionContextInterface $context): void {
                     try {
@@ -69,9 +73,10 @@ class ReservationVehicleType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults(['vehicle_choices' => [], 'vehicle_field' => 'vehicle_id', 'plate_field' => 'license_plate', 'plate_required' => false]);
+        $resolver->setDefaults(['vehicle_owners' => [], 'vehicle_choices' => [], 'vehicle_field' => 'vehicle_id', 'plate_field' => 'license_plate', 'plate_required' => false]);
         $resolver->setAllowedTypes('plate_required', 'bool');
         $resolver->setAllowedTypes('vehicle_choices', 'array');
+        $resolver->setAllowedTypes('vehicle_owners', 'array');
         $resolver->setAllowedTypes('vehicle_field', 'string');
         $resolver->setAllowedTypes('plate_field', 'string');
     }

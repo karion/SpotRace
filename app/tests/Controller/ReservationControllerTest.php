@@ -285,7 +285,7 @@ class ReservationControllerTest extends WebTestCase
         self::assertSelectorTextContains('body', 'użyj potwierdzenia');
         $this->client->request('GET', '/');
         self::assertSelectorExists('.bg-primary-subtle');
-        self::assertSelectorTextContains('.bg-primary-subtle', 'przypisane');
+        self::assertSelectorTextContains('.bg-primary-subtle', 'Twoje przypisanie');
         $this->client->loginUser($this->recipient);
         $this->client->request('POST', '/reservations/free', $values);
         self::assertResponseStatusCodeSame(422);
@@ -323,6 +323,81 @@ class ReservationControllerTest extends WebTestCase
         self::assertResponseRedirects();
         self::assertSame('free', $this->reservation()->getType());
         self::assertSame($this->user->getId(), $this->reservation()->getReservedForUser()->getId());
+    }
+
+    /** @return iterable<string, array{string, bool}> */
+    public static function occupiedAssignments(): iterable
+    {
+        yield 'own before cutoff' => ['06:59:59', true];
+        yield 'other before cutoff' => ['06:59:59', false];
+        yield 'own at cutoff' => ['07:00:00', true];
+        yield 'other at cutoff' => ['07:00:00', false];
+        yield 'other after cutoff' => ['09:00:00', false];
+    }
+
+    #[DataProvider('occupiedAssignments')]
+    public function testOccupiedAssignmentIsNeverSelectable(string $time, bool $own): void
+    {
+        $this->freezeTime('2026-09-18 '.$time);
+        $this->assign($this->user);
+        $this->newSpot('A-2', $this->company);
+        $reservedFor = $own ? $this->user : $this->recipient;
+        $this->em()->persist((new ParkingReservation())->setParkingSpot($this->spot)->setReservedForUser($reservedFor)->setCreatedByUser($this->user)->setReservationDate($this->policy->today())->setType($own ? 'assigned_confirmed' : 'assigned_delegated'));
+        $this->em()->flush();
+        $crawler = $this->client->request('GET', '/');
+        $card = $crawler->filter('[data-parking-spot="'.$this->spot->getId().'"]')->first();
+        self::assertSame($own ? 'reserved_own' : 'reserved', $card->attr('data-status'));
+        self::assertStringContainsString($own ? 'Twoja rezerwacja' : 'Zarezerwowane', $card->text());
+        self::assertStringContainsString('Twoje przypisanie', $card->text());
+        self::assertSame(0, $card->filter('button, a')->count());
+        self::assertStringNotContainsString('Potwierdzone', $card->text());
+    }
+
+    public function testModalTriggersContainContextAndConfiguredDeadline(): void
+    {
+        $location = $this->location('Parking Centrum');
+        $this->spot->setLocation($location);
+        $this->em()->persist((new CompanySetting())->setCompany($this->company)->setKey(SettingKeys::RESERVATION_CONFIRMATION_DEADLINE_HOUR)->setValue(9));
+        $this->em()->flush();
+        $crawler = $this->client->request('GET', '/');
+        $button = $crawler->filter('[data-spot-id="'.$this->spot->getId().'"]')->first();
+        self::assertSame('18.09.2026 · Parking Centrum · A-1', $button->attr('data-context'));
+        self::assertSame('Zarezerwuj A-1', $button->attr('data-action-label'));
+        $this->assign($this->user);
+        $crawler = $this->client->request('GET', '/');
+        self::assertSelectorTextContains('.bg-primary-subtle', 'Potwierdź do 09:00');
+        self::assertSame('Potwierdź A-1', $crawler->filter('[data-form-target="confirm-form-20260918"]')->attr('data-action-label'));
+        $this->client->loginUser($this->recipient);
+        $this->client->request('GET', '/');
+        self::assertSelectorTextContains('body', 'Pierwszeństwo innej osoby do 09:00');
+    }
+
+    public function testRequiredPlateDoesNotOfferReservationWithoutPlate(): void
+    {
+        $this->em()->persist((new CompanySetting())->setCompany($this->company)->setKey(SettingKeys::RESERVATION_REQUIRE_LICENSE_PLATE)->setValue(true));
+        $this->em()->flush();
+        $this->client->request('GET', '/');
+        self::assertSelectorTextNotContains('#free-form-20260918_vehicle_id', 'Bez rejestracji');
+        self::assertSelectorTextContains('#free-form-20260918_vehicle_id', 'Wybierz pojazd');
+        self::assertSelectorExists('[data-plate-required="1"]');
+        self::assertSelectorExists('[data-new-vehicle-field] input');
+        self::assertSelectorTextContains('body', 'Firma wymaga numeru rejestracyjnego');
+        $this->client->submit($this->form('/reservations/free'), ['license_plate' => 'WA123']);
+        self::assertResponseRedirects();
+    }
+
+    public function testDelegationMarksVehicleOwnersAndAcceptsRecipientsVehicle(): void
+    {
+        $this->assign($this->user);
+        $own = $this->vehicle($this->user, 'OWN123');
+        $target = $this->vehicle($this->recipient, 'TARGET123');
+        $crawler = $this->client->request('GET', '/reservations/delegate-assigned?date=2026-09-19');
+        self::assertSame($this->user->getId(), $crawler->filter('option[value="'.$own->getId().'"]')->attr('data-owner-id'));
+        self::assertSame($this->recipient->getId(), $crawler->filter('option[value="'.$target->getId().'"]')->attr('data-owner-id'));
+        self::assertSelectorExists('[data-recipient-choice]');
+        $this->client->submitForm('Przekaż miejsce', ['target_user_id' => $this->recipient->getId(), 'target_vehicle_id' => $target->getId()]);
+        self::assertResponseRedirects();
+        self::assertSame('TARGET123', $this->reservation('2026-09-19')->getLicensePlate());
     }
 
     public function testLastAssignedDayIsAcceptedAndNextDayIsRejected(): void

@@ -40,9 +40,17 @@ class ReservationFormFactory
         })];
         if (ReleaseReservationType::class !== $type) {
             $options['plate_required'] = $actor->getCompany() && $this->settings->bool(SettingKeys::RESERVATION_REQUIRE_LICENSE_PLATE, $actor->getCompany());
-            $options['vehicle_choices'] = $vehicleChoices ?? $this->vehicleChoices($actor, DelegateReservationType::class === $type);
+            $options['vehicle_choices'] = DelegateReservationType::class === $type ? ['Bez rejestracji' => '', 'Inny' => '__other__'] : ($vehicleChoices ?? $this->vehicleChoices($actor));
+            if ($options['plate_required']) {
+                unset($options['vehicle_choices']['Bez rejestracji']);
+            }
         }
         if (DelegateReservationType::class === $type) {
+            $options['vehicle_owners'] = [];
+            foreach ($actor->getCompany() ? $this->vehicles->findByCompany($actor->getCompany()) : [] as $vehicle) {
+                $options['vehicle_owners'][$vehicle->getId()] = $vehicle->getOwner()->getId();
+                $options['vehicle_choices'][$vehicle->getOwner()->getName().' ('.$vehicle->getOwner()->getEmail().') — '.$vehicle->getLicensePlate()] = $vehicle->getId();
+            }
             $options['user_choices'] = [];
             foreach ($actor->getCompany() ? $this->users->findByCompany($actor->getCompany()) : [] as $user) {
                 if ($user->getId() !== $actor->getId()) {
@@ -55,17 +63,12 @@ class ReservationFormFactory
     }
 
     /** @return array<string, string> */
-    public function vehicleChoices(User $actor, bool $delegating = false): array
+    public function vehicleChoices(User $actor): array
     {
         $choices = ['Bez rejestracji' => ''];
-        $vehicles = $delegating
-            ? ($actor->getCompany() ? $this->vehicles->findByCompany($actor->getCompany()) : [])
-            : $this->vehicles->findByOwner($actor);
+        $vehicles = $this->vehicles->findByOwner($actor);
         foreach ($vehicles as $vehicle) {
             $label = $vehicle->getLicensePlate();
-            if ($delegating) {
-                $label = $vehicle->getOwner()->getName().' ('.$vehicle->getOwner()->getEmail().') — '.$label;
-            }
             $choices[$label] = $vehicle->getId();
         }
         $choices['Inny'] = '__other__';
