@@ -109,3 +109,13 @@ Rezerwacja przechowuje niezależny tekstowy snapshot tablicy (`licensePlate`, op
 Zwolnić można wyłącznie własną rezerwację, przed godziną graniczną danego dnia. Włączenie obowiązkowej rejestracji nie blokuje zwalniania istniejących rezerwacji.
 
 Zrzuty formularzy na danych testowych: [kalendarz](screenshots/reservations/calendar.png), [przekazanie miejsca](screenshots/reservations/delegate.png), [błąd walidacji](screenshots/reservations/validation.png).
+
+## Wiarygodność informacji przy wyborze miejsca
+
+Zajętość ma pierwszeństwo przed przypisaniem: zajęte miejsce pokazuje „Twoja rezerwacja” albo „Zarezerwowane” i nie pozwala rozpocząć kolejnej rezerwacji. Własne przypisanie pozostaje dodatkową informacją. Dotyczy to także miejsca przekazanego innej osobie oraz rezerwacji po godzinie utraty pierwszeństwa.
+
+Dla dzisiejszych niezajętych przypisań kalendarz pokazuje godzinę końca pierwszeństwa wynikającą z konfiguracji firmy. Przy przypisaniach na przyszłe dni informuje, że miejsce jest przypisane użytkownikowi lub innej osobie, bez sugerowania konkretnego terminu końcowego. Po terminie własne niezajęte miejsce jest dostępne na zwykłych zasadach. Modal pokazuje dzień, lokalizację i nazwę miejsca, a przycisk wskazuje konkretną akcję, np. „Zarezerwuj A-04”.
+
+Przy obowiązkowej tablicy lista nie oferuje „Bez rejestracji”, tylko „Wybierz pojazd” i wyjaśnienie wymagania. Bez zapisanych pojazdów pole nowego numeru pojawia się od razu. Dla tablic opcjonalnych pozostaje możliwość rezerwacji bez numeru. Wpisany numer jest zachowany przy błędach formularza.
+
+Przekazywanie miejsca zaczyna się od wskazania odbiorcy. JavaScript ogranicza listę pojazdów do tej osoby; zmiana odbiorcy czyści poprzedni wybór i wpisany numer. Pole nowego numeru pojawia się po wybraniu „Inny” lub przy braku pojazdów odbiorcy. Serwer niezależnie sprawdza firmę odbiorcy oraz własność pojazdu, również dla ręcznie zmienionych żądań.

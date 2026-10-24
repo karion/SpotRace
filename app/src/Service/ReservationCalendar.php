@@ -107,10 +107,10 @@ class ReservationCalendar
             $spotStatuses = [];
             foreach ($allSpots as $spot) {
                 $spotId = $spot->getId();
-                if ($assignment?->getParkingSpot()->getId() === $spotId) {
+                if (isset($takenSpotIds[$spotId])) {
+                    $spotStatuses[$spotId] = $userReservation?->getParkingSpot()->getId() === $spotId ? 'reserved_own' : 'reserved';
+                } elseif ($assignment?->getParkingSpot()->getId() === $spotId) {
                     $spotStatuses[$spotId] = $this->policy->isAssignmentLockedForOthers($date, $company) ? 'assigned_own' : 'assigned_available';
-                } elseif (isset($takenSpotIds[$spotId])) {
-                    $spotStatuses[$spotId] = 'reserved';
                 } elseif (isset($assignedSpotIds[$spotId])) {
                     $spotStatuses[$spotId] = $this->policy->isAssignmentLockedForOthers($date, $company) ? 'assigned' : 'assigned_available';
                 } else {
@@ -151,6 +151,8 @@ class ReservationCalendar
             $days[] = [
                 'date' => $date,
                 'displayDate' => $this->formatPolishShortDate($date),
+                'isToday' => $date == $today,
+                'confirmationDeadline' => $this->policy->confirmationCutoff($date, $company),
                 'isWithinFreeWindow' => $isWithinFreeWindow,
                 'assignment' => $assignment,
                 'userReservation' => $userReservation,

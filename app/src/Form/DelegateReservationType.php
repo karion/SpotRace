@@ -21,7 +21,8 @@ class DelegateReservationType extends AbstractType
         $builder
             ->add('target_user_id', ChoiceType::class, [
                 'property_path' => 'targetUserId',
-                'label' => 'Użytkownik docelowy',
+                'label' => 'Komu przekazujesz miejsce?',
+                'attr' => ['data-recipient-choice' => ''],
                 'placeholder' => 'Wybierz użytkownika',
                 'choices' => $options['user_choices'],
                 'constraints' => [new NotBlank(message: 'Wybierz użytkownika docelowego.')],
